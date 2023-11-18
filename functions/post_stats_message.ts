@@ -28,10 +28,10 @@ export default SlackFunction(
   PostStatisticsFunctionDefinition,
   async ({ inputs, client }) => { // Provide any context properties, like `inputs`, `env`, or `token`
     // Implement your function
-    const result = await client.files.upload(
+    const result = await client.files.upload({
       channels: inputs.channel,
-      file: inputs.bar_chart.image
-    );
+      file: inputs.bar_chart.image,
+    });
     if (!result.ok) {
       const errorMsg =
         `Error posting an image to channel: ${inputs.channel}. Error detail: ${result.error}`;

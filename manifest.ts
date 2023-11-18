@@ -4,6 +4,7 @@ import { FetchLeaderboardFunctionDefinition } from "./functions/fetch_leaderboar
 import { CreateLeaderboardStatsFunctionDefinition } from "./functions/create_leaderboard_stats.ts";
 import { GenerateBarChartFunctionDefinition } from "./functions/generate_bar_chart.ts";
 import { PostStatisticsFunctionDefinition } from "./functions/post_stats_message.ts";
+import { LeaderboardMemberArrayType, LeaderboardMemberCustomType } from "./types/leaderboard.ts";
 
 /**
  * The app manifest contains the app's configuration. This
@@ -21,6 +22,7 @@ export default Manifest({
     PostStatisticsFunctionDefinition,
   ],
   workflows: [PostStatisticsWorkflow],
+  types: [LeaderboardMemberCustomType, LeaderboardMemberArrayType],
   outgoingDomains: ["adventofcode.com", "quickchart.io"],
   botScopes: ["chat:write", "files:read", "files:write"],
 });

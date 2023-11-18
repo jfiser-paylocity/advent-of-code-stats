@@ -11,8 +11,8 @@ const DailyStarProgressTrigger: Trigger<typeof PostStatisticsWorkflow.definition
     channel: {
       value: TriggerContextData.Shortcut.channel_id,
     },
-    leaderboards: {
-      value: Deno.env.get("ADVENT_OF_CODE_STATS_LEADERBOARD_IDS")!,
+    leaderboard_1: {
+      value: Deno.env.get("ADVENT_OF_CODE_STATS_LEADERBOARD_ID_1")!,
     },
   },
   schedule: {

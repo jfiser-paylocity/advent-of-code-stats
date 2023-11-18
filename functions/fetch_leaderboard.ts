@@ -1,4 +1,5 @@
 import { DefineFunction, Schema, SlackFunction } from "deno-slack-sdk/mod.ts";
+import { LeaderboardMemberArrayType } from "../types/leaderboard.ts";
 
 export const FetchLeaderboardFunctionDefinition = DefineFunction({
   callback_id: "fetch_leaderboard",
@@ -15,12 +16,12 @@ export const FetchLeaderboardFunctionDefinition = DefineFunction({
   },
   output_parameters: {
     properties: {
-      leaderboard: {
-        type: Schema.types.object,
-        description: "Leaderboard data",
+      members: {
+        type: LeaderboardMemberArrayType,
+        description: "Leaderboard members",
       },
     },
-    required: ["leaderboard"],
+    required: ["members"],
   },
 });
 
@@ -43,10 +44,24 @@ export default SlackFunction(
           `Failed to call AoC API (status: ${response.status}, body: ${body})`;
         return { error };
       }
-      // Do cool stuff with your repo info here
+      
+      // Map to custom type
       const data = await response.json();
+      const members = Object.values(data.members).map((member) => {
+        return {
+          completion_day_level: Object.entries(member.completion_day_level).map(([day, levels]) => {
+            return {
+              day: +day,
+              star_1_timestamp: levels["1"].get_star_ts,
+              star_2_timestamp: levels["2"].get_star_ts,
+            };
+          }),
+          name: member.name,
+          stars: member.stars,
+        };
+      });
 
-      return { outputs: { data } };
+      return { outputs: { members: members } };
     } catch (err) {
       const error = `Failed to call AoC API due to ${err}`;
       return { error };

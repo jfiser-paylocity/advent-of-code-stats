@@ -12,40 +12,33 @@ export const PostStatisticsWorkflow = DefineWorkflow({
       channel: { 
         type: Schema.slack.types.channel_id,
       },
-      leaderboards: { 
-        type: Schema.types.array,
-        items: { 
-          type: Schema.types.string,
-        },
-        description: "String of leaderboard IDs separated by comma",
+      leaderboard_1: { 
+        type: Schema.types.string,
+        description: "First leaderboard ID",
       },
     },
     required: ["leaderboards", "channel"],
   },
 });
 
-let leaderboards_data: String[] = [];
-for (const leaderboard_id of PostStatisticsWorkflow.inputs.leaderboards.split(",")) {
-  const step_result = PostStatisticsWorkflow.addStep(
-    FetchLeaderboardFunctionDefinition,
-    {
-      leaderboard_id: leaderboard_id,
-    },
-  );
-  leaderboards_data.push(step_result.outputs.leaderboard);
-};
-
-const statistics = PostStatisticsWorkflow.addStep(
-  CreateLeaderboardStatsFunctionDefinition,
+const step_leaderboard_1 = PostStatisticsWorkflow.addStep(
+  FetchLeaderboardFunctionDefinition,
   {
-    leaderboards: leaderboards_data,
+    leaderboard_id: PostStatisticsWorkflow.inputs.leaderboard_1,
   },
 );
 
-const bar_chart = PostStatisticsWorkflow.addStep(
+const step_statistics = PostStatisticsWorkflow.addStep(
+  CreateLeaderboardStatsFunctionDefinition,
+  {
+    all_leaderboard_members: [step_leaderboard_1.outputs.members].flatMap((members) => members),
+  },
+);
+
+const step_bar_chart = PostStatisticsWorkflow.addStep(
   GenerateBarChartFunctionDefinition,
   {
-    stats: statistics.outputs.stats,
+    stats: step_statistics.outputs.stats,
   },
 );
 
@@ -53,7 +46,7 @@ PostStatisticsWorkflow.addStep(
   PostStatisticsFunctionDefinition,
   {
     channel: PostStatisticsWorkflow.inputs.channel,
-    stats: statistics.outputs.stats,
-    bar_chart: bar_chart.outputs.chart,
+    stats: step_statistics.outputs.stats,
+    bar_chart: step_bar_chart.outputs.chart,
   },
 );

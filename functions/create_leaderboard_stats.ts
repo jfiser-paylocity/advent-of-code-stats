@@ -1,5 +1,6 @@
 import { DefineFunction, Schema, SlackFunction } from "deno-slack-sdk/mod.ts";
 import { sumOf } from "https://deno.land/std@0.206.0/collections/mod.ts";
+import { LeaderboardMemberArrayType } from "../types/leaderboard.ts";
 
 export const CreateLeaderboardStatsFunctionDefinition = DefineFunction({
   callback_id: "create_leaderboard_stats",
@@ -7,13 +8,12 @@ export const CreateLeaderboardStatsFunctionDefinition = DefineFunction({
   source_file: "functions/create_leaderboard_stats.ts",
   input_parameters: {
     properties: {
-      leaderboards: {
-        type: Schema.types.array,
-        items: { type: Schema.types.object },
+      all_leaderboard_members: {
+        type: LeaderboardMemberArrayType,
         description: "Leaderboard data",
       },
     },
-    required: ["leaderboards"],
+    required: ["all_leaderboard_members"],
   },
   output_parameters: {
     properties: {
@@ -32,30 +32,25 @@ export default SlackFunction(
   async ({ inputs }) => { // Provide any context properties, like `inputs`, `env`, or `token`
     // Implement your function
     let completed_tasks_total = 0;
-    let total_participants = 0;
     let first_person_ts = (new Date()).getTime();
     let first_person_name;
     let daily_silver_stars = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     let daily_gold_stars = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    const total_participants = inputs.all_leaderboard_members.length;;
     const day_today = (new Date()).getDate();
 
     // Use `let i` because i mutates (`i++`).
-    for (const leaderboard of inputs.leaderboards) {
-      const members = Object.values(leaderboard.members);
-      total_participants += members.length;
-      completed_tasks_total += sumOf(members, (member) => member.stars);
-
-      for (const member of members) {
-        for (let [day, levels] of Object.entries(member.completion_day_level)) {
-          if ("1" in levels) {
-            daily_silver_stars[+day - 1] += 1;
-          };
-          if ("2" in levels) {
-            daily_gold_stars[+day - 1] += 1;
-            if (+day == day_today && +levels[2].get_star_ts < first_person_ts) {
-              first_person_ts = +levels[2].get_star_ts;
-              first_person_name = member.name;
-            };
+    for (const member of inputs.all_leaderboard_members) {
+      completed_tasks_total += member.stars;
+      for (const completion_level of member.completion_day_level) {
+        if (completion_level.star_1_timestamp) {
+          daily_silver_stars[completion_level.day - 1] += 1;
+        };
+        if (completion_level.star_2_timestamp) {
+          daily_gold_stars[completion_level.day - 1] += 1;
+          if (completion_level.day == day_today && completion_level.star_2_timestamp < first_person_ts) {
+            first_person_ts = completion_level.star_2_timestamp;
+            first_person_name = member.name;
           };
         };
       };
