@@ -17,12 +17,21 @@ export const LeaderboardCompletionLevelCustomType = DefineType({
   required: ["day"],
 });
 
+// Define the array with the items as the custom type
+export const LeaderboardCompletionLevelArrayType = DefineType({
+  name: "LeaderboardCompletionLevelArray",
+  type: Schema.types.array,
+  items: {
+    type: LeaderboardCompletionLevelCustomType,
+  },
+});
+
 export const LeaderboardMemberCustomType = DefineType({
   name: "LeaderboardMember",
   type: Schema.types.object,
   properties: {
     completion_day_level: {
-      type: Schema.types.string,
+      type: LeaderboardCompletionLevelArrayType,
     },
     name: {
       type: Schema.types.string,

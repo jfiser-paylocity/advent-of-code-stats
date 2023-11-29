@@ -21,24 +21,24 @@ export const PostStatisticsWorkflow = DefineWorkflow({
   },
 });
 
-const step_leaderboard_1 = PostStatisticsWorkflow.addStep(
+const stepLeaderboard = PostStatisticsWorkflow.addStep(
   FetchLeaderboardFunctionDefinition,
   {
     leaderboard_id: PostStatisticsWorkflow.inputs.leaderboard_1,
   },
 );
 
-const step_statistics = PostStatisticsWorkflow.addStep(
+const stepStatistics = PostStatisticsWorkflow.addStep(
   CreateLeaderboardStatsFunctionDefinition,
   {
-    all_leaderboard_members: [step_leaderboard_1.outputs.members].flatMap((members) => members),
+    all_members: stepLeaderboard.outputs.members
   },
 );
 
-const step_bar_chart = PostStatisticsWorkflow.addStep(
+const stepBarChart = PostStatisticsWorkflow.addStep(
   GenerateBarChartFunctionDefinition,
   {
-    stats: step_statistics.outputs.stats,
+    stats: stepStatistics.outputs.stats,
   },
 );
 
@@ -46,7 +46,7 @@ PostStatisticsWorkflow.addStep(
   PostStatisticsFunctionDefinition,
   {
     channel: PostStatisticsWorkflow.inputs.channel,
-    stats: step_statistics.outputs.stats,
-    bar_chart: step_bar_chart.outputs.chart,
+    stats: stepStatistics.outputs.stats,
+    bar_chart_url: stepBarChart.outputs.chart_url,
   },
 );

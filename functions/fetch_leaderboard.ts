@@ -33,10 +33,11 @@ export default SlackFunction(
     const headers = {
       "Cookie": `session=${env.ADVENT_OF_CODE_STATS_SESSION_COOKIE}`,
       "Content-Type": "application/json",
+      "User-Agent": "github.com/jfiser-paylocity/advent-of-code-stats"
     };
     try {
       const endpoint = `https://adventofcode.com/2023/leaderboard/private/view/${inputs.leaderboard_id}.json`;
-      const response = await fetch(endpoint, { method: "GET", headers });
+      const response = await fetch(endpoint, { method: "GET", headers: headers, credentials: "include" });
       if (response.status != 200) {
         // In the case where the API responded with non 200 status
         const body = await response.text();
@@ -52,8 +53,8 @@ export default SlackFunction(
           completion_day_level: Object.entries(member.completion_day_level).map(([day, levels]) => {
             return {
               day: +day,
-              star_1_timestamp: levels["1"].get_star_ts,
-              star_2_timestamp: levels["2"].get_star_ts,
+              star_1_timestamp: levels["1"]?.get_star_ts,
+              star_2_timestamp: levels["2"]?.get_star_ts,
             };
           }),
           name: member.name,
@@ -61,7 +62,7 @@ export default SlackFunction(
         };
       });
 
-      return { outputs: { members: members } };
+      return { outputs: { members } };
     } catch (err) {
       const error = `Failed to call AoC API due to ${err}`;
       return { error };
