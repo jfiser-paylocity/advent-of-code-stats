@@ -1,5 +1,5 @@
 import { DefineFunction, Schema, SlackFunction } from "deno-slack-sdk/mod.ts";
-import { KnownBlock } from "https://cdn.skypack.dev/@slack/types?dts";
+import { LeaderboardStatsCustomType } from "../types/leaderboard_stats.ts";
 
 export const PostStatisticsFunctionDefinition = DefineFunction({
   callback_id: "post_stats_message",
@@ -11,12 +11,12 @@ export const PostStatisticsFunctionDefinition = DefineFunction({
         type: Schema.slack.types.channel_id,
       },
       stats: {
-        type: Schema.types.object,
+        type: LeaderboardStatsCustomType,
         description: "Leaderboard data",
       },
-      bar_chart: {
-        type: Schema.types.object,
-        description: "Bar chart image",
+      bar_chart_url: {
+        type: Schema.types.string,
+        description: "Bar chart image URL",
       },
     },
     required: ["stats", "bar_chart"],
@@ -27,36 +27,21 @@ export default SlackFunction(
   // Pass along the function definition from earlier in the source file
   PostStatisticsFunctionDefinition,
   async ({ inputs, client }) => { // Provide any context properties, like `inputs`, `env`, or `token`
-    // Implement your function
-    const result = await client.files.upload({
-      channels: inputs.channel,
-      file: inputs.bar_chart.image,
-    });
-    if (!result.ok) {
-      const errorMsg =
-        `Error posting an image to channel: ${inputs.channel}. Error detail: ${result.error}`;
-      console.log(errorMsg);
-
-      // 2. Complete function with an error message
-      return { error: errorMsg };
-    };
-
-    const bar_chart_url = result.file.permalink || result.file.url_private;
-    const blocks: KnownBlock[] = [
+    const blocks = [
       {
         "type": "section",
         "text": {
           "type": "mrkdwn",
           "text": [
-            "Total star progress of the team has reached *40%*.",
-            inputs.stats.first_solution_today_by ? `First participant to complete all tasks today was ${inputs.stats.first_solution_today_by}, congrats!` : null,
-            "That is awesome, keep up at the good work!. See below for the detailed chart."
+            `Total star progress of the team for day ${(new Date()).getDate()} is *${inputs.stats.progress}%*.`,
+            inputs.stats.first_solution_today_by ? `First participant to complete all tasks today was *${inputs.stats.first_solution_today_by}*, congrats!` : "You still have a chance to be the first to complete all tasks today!",
+            "That is awesome, keep up at the good work! See below for the detailed chart."
           ].filter(x => x).join(" ")
         }
       },
       {
         "type": "image",
-        "image_url": bar_chart_url,
+        "image_url": inputs.bar_chart_url,
         "alt_text": "daily star progress"
       }
     ];
@@ -77,5 +62,6 @@ export default SlackFunction(
       // 2. Complete function with an error message
       return { error: postSummaryErrorMsg };
     };
+    return { outputs: {} };
   },
 );

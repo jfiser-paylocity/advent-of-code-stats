@@ -1,6 +1,7 @@
 import { DefineFunction, Schema, SlackFunction } from "deno-slack-sdk/mod.ts";
-import { sumOf } from "https://deno.land/std@0.206.0/collections/mod.ts";
+import { sumOf } from "https://deno.land/std@0.207.0/collections/mod.ts";
 import { LeaderboardMemberArrayType } from "../types/leaderboard.ts";
+import { LeaderboardStatsCustomType } from "../types/leaderboard_stats.ts";
 
 export const CreateLeaderboardStatsFunctionDefinition = DefineFunction({
   callback_id: "create_leaderboard_stats",
@@ -8,17 +9,17 @@ export const CreateLeaderboardStatsFunctionDefinition = DefineFunction({
   source_file: "functions/create_leaderboard_stats.ts",
   input_parameters: {
     properties: {
-      all_leaderboard_members: {
+      all_members: {
         type: LeaderboardMemberArrayType,
         description: "Leaderboard data",
       },
     },
-    required: ["all_leaderboard_members"],
+    required: ["all_members"],
   },
   output_parameters: {
     properties: {
       stats: {
-        type: Schema.types.object,
+        type: LeaderboardStatsCustomType,
         description: "Leaderboard statistics",
       },
     },
@@ -36,11 +37,11 @@ export default SlackFunction(
     let first_person_name;
     let daily_silver_stars = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     let daily_gold_stars = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-    const total_participants = inputs.all_leaderboard_members.length;;
+    const total_participants = inputs.all_members.length;;
     const day_today = (new Date()).getDate();
 
     // Use `let i` because i mutates (`i++`).
-    for (const member of inputs.all_leaderboard_members) {
+    for (const member of inputs.all_members) {
       completed_tasks_total += member.stars;
       for (const completion_level of member.completion_day_level) {
         if (completion_level.star_1_timestamp) {
@@ -58,14 +59,15 @@ export default SlackFunction(
 
     const available_tasks = 2 * day_today * total_participants;
     const total_progress_percentage = ((completed_tasks_total / available_tasks) * 100).toFixed(2);
+    const total_progress_percentage_capped = Math.min(+total_progress_percentage, 100);
 
     const data = {
-      "progress": total_progress_percentage,
+      "progress": total_progress_percentage_capped,
       "first_solution_today_by": first_person_name,
       "daily_silver_stars": daily_silver_stars,
       "daily_gold_stars": daily_gold_stars,
     };
 
-    return { outputs: { data } };
+    return { outputs: { stats: data } };
   },
 );

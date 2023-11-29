@@ -1,4 +1,5 @@
 import { DefineFunction, Schema, SlackFunction } from "deno-slack-sdk/mod.ts";
+import { LeaderboardStatsCustomType } from "../types/leaderboard_stats.ts";
 
 export const GenerateBarChartFunctionDefinition = DefineFunction({
   callback_id: "generate_bar_chart",
@@ -7,7 +8,7 @@ export const GenerateBarChartFunctionDefinition = DefineFunction({
   input_parameters: {
     properties: {
       stats: {
-        type: Schema.types.object,
+        type: LeaderboardStatsCustomType,
         description: "Leaderboard statistics",
       },
     },
@@ -15,30 +16,30 @@ export const GenerateBarChartFunctionDefinition = DefineFunction({
   },
   output_parameters: {
     properties: {
-      chart: {
-        type: Schema.types.object,
-        description: "Generate bar chart image",
+      chart_url: {
+        type: Schema.types.string,
+        description: "Generated bar chart image url",
       },
     },
-    required: ["chart"],
+    required: ["chart_url"],
   },
 });
 
 export default SlackFunction(
   // Pass along the function definition from earlier in the source file
   GenerateBarChartFunctionDefinition,
-  async ({ inputs }) => { // Provide any context properties, like `inputs`, `env`, or `token`
+  ({ inputs }) => { // Provide any context properties, like `inputs`, `env`, or `token`
     const chart_background = "#111E28";
     const primary_color = "#fc3e21";
     const grid_color = "rgba(255, 255, 255, 0.1)";
     const chart_config = `{
       type: 'bar',
       data: {
-        labels: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, ""],
+        labels: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, "", ""],
         datasets: [
           {
             label: 'Silver stars',
-            data: [${inputs.daily_silver_stars}],
+            data: [${inputs.stats.daily_silver_stars}],
             backgroundColor: 'silver',
             borderWidth: 0,
             barPercentage: 0.8,
@@ -48,7 +49,7 @@ export default SlackFunction(
           },
           {
             label: 'Gold stars',
-            data: [${inputs.daily_gold_stars}],
+            data: [${inputs.stats.daily_gold_stars}],
             backgroundColor: 'gold',
             borderWidth: 0,
             barPercentage: 0.8,
@@ -71,7 +72,7 @@ export default SlackFunction(
             anchor: 'end',
             align: 'top',
             rotation: -90,
-            formatter: function(value, context) { return value > 0 ? value + "%" : ""; },
+            formatter: <formatter_function>,
             font: { size: 8 }
           }
         },
@@ -99,7 +100,7 @@ export default SlackFunction(
             type: 'line',
             mode: 'horizontal',
             scaleID: 'y-axis-0',
-            value: ${inputs.progress},
+            value: ${inputs.stats.progress},
             borderColor: '${primary_color}',
             label: {
               enabled: true,
@@ -107,7 +108,7 @@ export default SlackFunction(
               fontColor: '${primary_color}',
               fontSize: 8,
               backgroundColor: '${chart_background}',
-              content: '${inputs.progress + "%"}',
+              content: '${inputs.stats.progress + "%"}',
               xAdjust: -5
             }
           }]
@@ -119,37 +120,18 @@ export default SlackFunction(
         }
       }
     }`;
+    const chart_config_minify = chart_config
+      .replace(/\n\s+/g, '')
+      .replace(/,\s+/g, ',')
+      .replace(/{\s+/g, '{')
+      .replace(/\s+}/g, '}')
+      .replace(/:\s+/g, ':')
+      .replace('<formatter_function>', 'function(value, context){ return value > 0 ? value+"%" : "" }');
 
-    try {
-      const endpoint = "https://quickchart.io/chart";
-      const body = JSON.stringify({
-        version: "2",
-        backgroundColor: chart_background,
-        width: 740,
-        height: 270,
-        devicePixelRatio: 3.0,
-        format: "png",
-        chart: chart_config
-      });
-      const headers = { "Content-Type": "application/json" };
-      const response = await fetch(endpoint, { 
-        method: "POST", 
-        body: body, 
-        headers: headers 
-      });
-      if (response.status != 200) {
-        // In the case where the API responded with non 200 status
-        const body = await response.text();
-        const error =
-          `Failed to call AoC API (status: ${response.status}, body: ${body})`;
-        throw { error };
-      };
-      const chart_image = await response.arrayBuffer();
-      return { outputs: { chart: { image: chart_image } } };
-    } catch (err) {
-      const error = "Failed to call AoC API";
-      console.log(err);
-      throw { error };
-    };
+    const chart_config_encoded = encodeURIComponent(chart_config_minify);
+    const chart_background_encoded = encodeURIComponent(chart_background);
+    const endpoint = `https://quickchart.io/chart?w=740&h=270&v=2&f=png&bkg=${chart_background_encoded}&c=${chart_config_encoded}`;
+
+    return { outputs: { chart_url: endpoint }};
   },
 );
