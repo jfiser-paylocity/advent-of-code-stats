@@ -9,16 +9,19 @@ const DailyStarProgressTrigger: Trigger<typeof PostStatisticsWorkflow.definition
   workflow: `#/workflows/${PostStatisticsWorkflow.definition.callback_id}`,
   inputs: {
     channel: {
-      value: TriggerContextData.Shortcut.channel_id,
+      value: Deno.env.get("ADVENT_OF_CODE_STATS_CHANNEL_ID")!,
     },
     leaderboard_1: {
       value: Deno.env.get("ADVENT_OF_CODE_STATS_LEADERBOARD_ID_1")!,
     },
   },
   schedule: {
-    start_time: "2023-12-01T07:00:00.000Z",
-    end_time: "2023-12-31T23:59:59.999Z",
-    frequency: { type: "hourly", repeats_every: 12 },
+    start_time: "2023-12-01T07:00:00Z",
+    end_time: "2023-12-31T23:59:59Z",
+    frequency: {
+      type: "hourly",
+      repeats_every: 12
+    },
   },
 };
 

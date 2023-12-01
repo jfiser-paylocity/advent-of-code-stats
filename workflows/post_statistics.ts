@@ -17,7 +17,7 @@ export const PostStatisticsWorkflow = DefineWorkflow({
         description: "First leaderboard ID",
       },
     },
-    required: ["leaderboards", "channel"],
+    required: ["leaderboard_1", "channel"],
   },
 });
 
