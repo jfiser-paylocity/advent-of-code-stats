@@ -37,7 +37,7 @@ export default SlackFunction(
     let first_person_name;
     let daily_silver_stars = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     let daily_gold_stars = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-    const total_participants = inputs.all_members.length;;
+    const total_participants = inputs.all_members.length;
     const day_today = (new Date()).getDate();
 
     // Use `let i` because i mutates (`i++`).
@@ -64,8 +64,8 @@ export default SlackFunction(
     const data = {
       "progress": total_progress_percentage_capped,
       "first_solution_today_by": first_person_name,
-      "daily_silver_stars": daily_silver_stars,
-      "daily_gold_stars": daily_gold_stars,
+      "daily_silver_stars": daily_silver_stars.map((value) => ((value/total_participants) * 100).toFixed()),
+      "daily_gold_stars": daily_gold_stars.map((value) => ((value/total_participants) * 100).toFixed()),
     };
 
     return { outputs: { stats: data } };

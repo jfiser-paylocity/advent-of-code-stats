@@ -9,7 +9,7 @@ const StarProgressLinkTrigger: Trigger<typeof PostStatisticsWorkflow.definition>
   workflow: `#/workflows/${PostStatisticsWorkflow.definition.callback_id}`,
   inputs: {
     channel: {
-      value: Deno.env.get("ADVENT_OF_CODE_STATS_CHANNEL_ID")!,
+      value: TriggerContextData.Shortcut.channel_id,
     },
     leaderboard_1: {
       value: Deno.env.get("ADVENT_OF_CODE_STATS_LEADERBOARD_ID_1")!,
