@@ -5,11 +5,11 @@ import "std/dotenv/load.ts";
 
 const StarProgressLinkTrigger: Trigger<typeof PostStatisticsWorkflow.definition> = {
   type: TriggerTypes.Shortcut,
-  name: "Sstar progress link trigger",
+  name: "Star progress link trigger",
   workflow: `#/workflows/${PostStatisticsWorkflow.definition.callback_id}`,
   inputs: {
     channel: {
-      value: TriggerContextData.Shortcut.channel_id,
+      value: Deno.env.get("ADVENT_OF_CODE_STATS_CHANNEL_ID")!,
     },
     leaderboard_1: {
       value: Deno.env.get("ADVENT_OF_CODE_STATS_LEADERBOARD_ID_1")!,

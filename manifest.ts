@@ -25,5 +25,5 @@ export default Manifest({
   workflows: [PostStatisticsWorkflow],
   types: [LeaderboardMemberCustomType, LeaderboardMemberArrayType, LeaderboardStatsCustomType],
   outgoingDomains: ["adventofcode.com", "quickchart.io"],
-  botScopes: ["chat:write", "files:read", "files:write"],
+  botScopes: ["chat:write"],
 });
