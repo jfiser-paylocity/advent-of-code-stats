@@ -16,11 +16,11 @@ const DailyStarProgressTrigger: Trigger<typeof PostStatisticsWorkflow.definition
     },
   },
   schedule: {
-    start_time: "2023-12-02T09:00:00Z",
+    start_time: "2023-12-05T21:00:00Z",
     end_time: "2023-12-31T23:59:59Z",
     frequency: {
       type: "hourly",
-      repeats_every: 12
+      repeats_every: 24
     },
   },
 };
