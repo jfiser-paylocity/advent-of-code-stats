@@ -35,7 +35,6 @@ export default SlackFunction(
           "text": [
             `Total star progress of the team for day ${(new Date()).getDate()} is *${inputs.stats.progress}%*.`,
             inputs.stats.first_solution_today_by ? `First participant to complete all tasks today was *${inputs.stats.first_solution_today_by}*, congrats!` : "You still have a chance to be the first to complete all tasks today!",
-            "That is awesome, keep up at the good work! See below for the detailed chart."
           ].filter(x => x).join(" ")
         }
       },
