@@ -27,16 +27,26 @@ export default SlackFunction(
   // Pass along the function definition from earlier in the source file
   PostStatisticsFunctionDefinition,
   async ({ inputs, client }) => { // Provide any context properties, like `inputs`, `env`, or `token`
+    const day_today = (new Date()).getDate();
+    const day_today_capped = Math.min(25, day_today);
+    let text = [
+      `Total star progress of the team for day ${day_today_capped} is *${inputs.stats.progress}%*.`
+    ]
+    if (day_today == day_today_capped) {
+      if (inputs.stats.first_solution_today_by) {
+        text.push(`First participant to complete all tasks today was *${inputs.stats.first_solution_today_by}*, congrats!`);
+      } else {
+        text.push("You still have a chance to be the first to complete all tasks today!");
+      }
+      text.push("Share your execution times in the thread.");
+    }
+
     const blocks = [
       {
         "type": "section",
         "text": {
           "type": "mrkdwn",
-          "text": [
-            `Total star progress of the team for day ${(new Date()).getDate()} is *${inputs.stats.progress}%*.`,
-            inputs.stats.first_solution_today_by ? `First participant to complete all tasks today was *${inputs.stats.first_solution_today_by}*, congrats!` : "You still have a chance to be the first to complete all tasks today!",
-            "Share your execution times in the thread.",
-          ].filter(x => x).join(" ")
+          "text": text.join(" ")
         }
       },
       {

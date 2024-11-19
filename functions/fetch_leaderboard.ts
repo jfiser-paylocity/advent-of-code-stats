@@ -35,8 +35,9 @@ export default SlackFunction(
       "Content-Type": "application/json",
       "User-Agent": "github.com/jfiser-paylocity/advent-of-code-stats"
     };
+    const current_year = (new Date()).getFullYear();
     try {
-      const endpoint = `https://adventofcode.com/2023/leaderboard/private/view/${inputs.leaderboard_id}.json`;
+      const endpoint = `https://adventofcode.com/${current_year}/leaderboard/private/view/${inputs.leaderboard_id}.json`;
       const response = await fetch(endpoint, { method: "GET", headers: headers, credentials: "include" });
       if (response.status != 200) {
         // In the case where the API responded with non 200 status

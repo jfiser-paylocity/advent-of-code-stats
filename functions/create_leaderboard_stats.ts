@@ -1,5 +1,5 @@
 import { DefineFunction, Schema, SlackFunction } from "deno-slack-sdk/mod.ts";
-import { sumOf } from "https://deno.land/std@0.207.0/collections/mod.ts";
+import { sumOf } from "https://deno.land/std@0.224.0/collections/mod.ts";
 import { LeaderboardMemberArrayType } from "../types/leaderboard.ts";
 import { LeaderboardStatsCustomType } from "../types/leaderboard_stats.ts";
 
@@ -38,7 +38,7 @@ export default SlackFunction(
     let daily_silver_stars = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     let daily_gold_stars = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     const total_participants = inputs.all_members.length;
-    const day_today = (new Date()).getDate();
+    const day_today = Math.min(daily_gold_stars.length, (new Date()).getDate());
 
     // Use `let i` because i mutates (`i++`).
     for (const member of inputs.all_members) {
@@ -49,7 +49,7 @@ export default SlackFunction(
         };
         if (completion_level.star_2_timestamp) {
           daily_gold_stars[completion_level.day - 1] += 1;
-          if (completion_level.day == day_today && completion_level.star_2_timestamp < first_person_ts) {
+          if (day_today != daily_gold_stars.length && completion_level.day == day_today && completion_level.star_2_timestamp < first_person_ts) {
             first_person_ts = completion_level.star_2_timestamp;
             first_person_name = member.name;
           };
