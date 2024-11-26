@@ -7,7 +7,7 @@ export const PostStatisticsFunctionDefinition = DefineFunction({
   source_file: "functions/post_stats_message.ts",
   input_parameters: {
     properties: {
-      channel: { 
+      channel: {
         type: Schema.slack.types.channel_id,
       },
       stats: {
@@ -29,9 +29,9 @@ export default SlackFunction(
   async ({ inputs, client }) => { // Provide any context properties, like `inputs`, `env`, or `token`
     const day_today = (new Date()).getDate();
     const day_today_capped = Math.min(25, day_today);
-    let text = [
-      `Total star progress of the team for day ${day_today_capped} is *${inputs.stats.progress}%*.`
-    ]
+    const text = [
+      `Total star progress of the team for day ${day_today_capped} is *${inputs.stats.progress}%*.`,
+    ];
     if (day_today == day_today_capped) {
       if (inputs.stats.first_solution_today_by) {
         text.push(`First participant to complete all tasks today was *${inputs.stats.first_solution_today_by}*, congrats!`);
@@ -46,14 +46,14 @@ export default SlackFunction(
         "type": "section",
         "text": {
           "type": "mrkdwn",
-          "text": text.join(" ")
-        }
+          "text": text.join(" "),
+        },
       },
       {
         "type": "image",
         "image_url": inputs.bar_chart_url,
-        "alt_text": "daily star progress"
-      }
+        "alt_text": "daily star progress",
+      },
     ];
 
     // 1. Post a message in thread to the draft announcement message
@@ -71,7 +71,7 @@ export default SlackFunction(
 
       // 2. Complete function with an error message
       return { error: postSummaryErrorMsg };
-    };
+    }
     return { outputs: {} };
   },
 );

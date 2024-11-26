@@ -121,17 +121,18 @@ export default SlackFunction(
       }
     }`;
     const chart_config_minify = chart_config
-      .replace(/\n\s+/g, '')
-      .replace(/,\s+/g, ',')
-      .replace(/{\s+/g, '{')
-      .replace(/\s+}/g, '}')
-      .replace(/:\s+/g, ':')
-      .replace('<formatter_function>', 'function(value, context){ return value > 0 ? value+"%" : "" }');
+      .replace(/\n\s+/g, "")
+      .replace(/,\s+/g, ",")
+      .replace(/{\s+/g, "{")
+      .replace(/\s+}/g, "}")
+      .replace(/:\s+/g, ":")
+      .replace("<formatter_function>", 'function(value, context){ return value > 0 ? value+"%" : "" }');
 
     const chart_config_encoded = encodeURIComponent(chart_config_minify);
     const chart_background_encoded = encodeURIComponent(chart_background);
-    const endpoint = `https://quickchart.io/chart?w=740&h=270&v=2&f=png&bkg=${chart_background_encoded}&c=${chart_config_encoded}`;
+    const endpoint =
+      `https://quickchart.io/chart?w=740&h=270&v=2&f=png&bkg=${chart_background_encoded}&c=${chart_config_encoded}`;
 
-    return { outputs: { chart_url: endpoint }};
+    return { outputs: { chart_url: endpoint } };
   },
 );

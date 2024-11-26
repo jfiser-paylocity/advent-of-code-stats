@@ -1,5 +1,5 @@
 import { Trigger } from "deno-slack-api/types.ts";
-import { TriggerContextData, TriggerTypes } from "deno-slack-api/mod.ts";
+import { TriggerTypes } from "deno-slack-api/mod.ts";
 import { PostStatisticsWorkflow } from "../workflows/post_statistics.ts";
 import "std/dotenv/load.ts";
 

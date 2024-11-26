@@ -1,5 +1,4 @@
-import { DefineFunction, Schema, SlackFunction } from "deno-slack-sdk/mod.ts";
-import { sumOf } from "https://deno.land/std@0.224.0/collections/mod.ts";
+import { DefineFunction, SlackFunction } from "deno-slack-sdk/mod.ts";
 import { LeaderboardMemberArrayType } from "../types/leaderboard.ts";
 import { LeaderboardStatsCustomType } from "../types/leaderboard_stats.ts";
 
@@ -30,13 +29,13 @@ export const CreateLeaderboardStatsFunctionDefinition = DefineFunction({
 export default SlackFunction(
   // Pass along the function definition from earlier in the source file
   CreateLeaderboardStatsFunctionDefinition,
-  async ({ inputs }) => { // Provide any context properties, like `inputs`, `env`, or `token`
+  ({ inputs }) => { // Provide any context properties, like `inputs`, `env`, or `token`
     // Implement your function
     let completed_tasks_total = 0;
     let first_person_ts = (new Date()).getTime();
     let first_person_name;
-    let daily_silver_stars = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-    let daily_gold_stars = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    const daily_silver_stars = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    const daily_gold_stars = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     const total_participants = inputs.all_members.length;
     const day_today = Math.min(daily_gold_stars.length, (new Date()).getDate());
 
@@ -46,16 +45,16 @@ export default SlackFunction(
       for (const completion_level of member.completion_day_level) {
         if (completion_level.star_1_timestamp) {
           daily_silver_stars[completion_level.day - 1] += 1;
-        };
+        }
         if (completion_level.star_2_timestamp) {
           daily_gold_stars[completion_level.day - 1] += 1;
           if (day_today != daily_gold_stars.length && completion_level.day == day_today && completion_level.star_2_timestamp < first_person_ts) {
             first_person_ts = completion_level.star_2_timestamp;
             first_person_name = member.name;
-          };
-        };
-      };
-    };
+          }
+        }
+      }
+    }
 
     const available_tasks = 2 * day_today * total_participants;
     const total_progress_percentage = ((completed_tasks_total / available_tasks) * 100).toFixed(2);
@@ -64,8 +63,12 @@ export default SlackFunction(
     const data = {
       "progress": total_progress_percentage_capped,
       "first_solution_today_by": first_person_name,
-      "daily_silver_stars": daily_silver_stars.map((value) => ((value/total_participants) * 100).toFixed()),
-      "daily_gold_stars": daily_gold_stars.map((value) => ((value/total_participants) * 100).toFixed()),
+      "daily_silver_stars": daily_silver_stars.map((value) =>
+        ((value / total_participants) * 100).toFixed()
+      ),
+      "daily_gold_stars": daily_gold_stars.map((value) =>
+        ((value / total_participants) * 100).toFixed()
+      ),
     };
 
     return { outputs: { stats: data } };
