@@ -9,10 +9,10 @@ export const PostStatisticsWorkflow = DefineWorkflow({
   title: "Post statistics",
   input_parameters: {
     properties: {
-      channel: { 
+      channel: {
         type: Schema.slack.types.channel_id,
       },
-      leaderboard_1: { 
+      leaderboard_1: {
         type: Schema.types.string,
         description: "First leaderboard ID",
       },
@@ -31,7 +31,7 @@ const stepLeaderboard = PostStatisticsWorkflow.addStep(
 const stepStatistics = PostStatisticsWorkflow.addStep(
   CreateLeaderboardStatsFunctionDefinition,
   {
-    all_members: stepLeaderboard.outputs.members
+    all_members: stepLeaderboard.outputs.members,
   },
 );
 

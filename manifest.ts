@@ -4,7 +4,10 @@ import { FetchLeaderboardFunctionDefinition } from "./functions/fetch_leaderboar
 import { CreateLeaderboardStatsFunctionDefinition } from "./functions/create_leaderboard_stats.ts";
 import { GenerateBarChartFunctionDefinition } from "./functions/generate_bar_chart.ts";
 import { PostStatisticsFunctionDefinition } from "./functions/post_stats_message.ts";
-import { LeaderboardMemberArrayType, LeaderboardMemberCustomType } from "./types/leaderboard.ts";
+import {
+  LeaderboardMemberArrayType,
+  LeaderboardMemberCustomType,
+} from "./types/leaderboard.ts";
 import { LeaderboardStatsCustomType } from "./types/leaderboard_stats.ts";
 
 /**
@@ -23,7 +26,11 @@ export default Manifest({
     PostStatisticsFunctionDefinition,
   ],
   workflows: [PostStatisticsWorkflow],
-  types: [LeaderboardMemberCustomType, LeaderboardMemberArrayType, LeaderboardStatsCustomType],
+  types: [
+    LeaderboardMemberCustomType,
+    LeaderboardMemberArrayType,
+    LeaderboardStatsCustomType,
+  ],
   outgoingDomains: ["adventofcode.com", "quickchart.io"],
   botScopes: ["chat:write"],
 });

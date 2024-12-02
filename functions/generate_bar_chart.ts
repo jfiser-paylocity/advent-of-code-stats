@@ -126,7 +126,10 @@ export default SlackFunction(
       .replace(/{\s+/g, "{")
       .replace(/\s+}/g, "}")
       .replace(/:\s+/g, ":")
-      .replace("<formatter_function>", 'function(value, context){ return value > 0 ? value+"%" : "" }');
+      .replace(
+        "<formatter_function>",
+        'function(value, context){ return value > 0 ? value+"%" : "" }',
+      );
 
     const chart_config_encoded = encodeURIComponent(chart_config_minify);
     const chart_background_encoded = encodeURIComponent(chart_background);

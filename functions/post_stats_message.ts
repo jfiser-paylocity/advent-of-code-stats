@@ -19,7 +19,7 @@ export const PostStatisticsFunctionDefinition = DefineFunction({
         description: "Bar chart image URL",
       },
     },
-    required: ["stats", "bar_chart"],
+    required: ["channel", "stats", "bar_chart_url"],
   },
 });
 
@@ -34,9 +34,13 @@ export default SlackFunction(
     ];
     if (day_today == day_today_capped) {
       if (inputs.stats.first_solution_today_by) {
-        text.push(`First participant to complete all tasks today was *${inputs.stats.first_solution_today_by}*, congrats!`);
+        text.push(
+          `First participant to complete all tasks today was *${inputs.stats.first_solution_today_by}*, congrats!`,
+        );
       } else {
-        text.push("You still have a chance to be the first to complete all tasks today!");
+        text.push(
+          "You still have a chance to be the first to complete all tasks today!",
+        );
       }
       text.push("Share your execution times in the thread.");
     }
@@ -56,22 +60,25 @@ export default SlackFunction(
       },
     ];
 
-    // 1. Post a message in thread to the draft announcement message
-    const postResp = await client.chat.postMessage({
-      channel: inputs.channel,
-      thread_ts: "",
-      blocks: blocks,
-      unfurl_links: false,
-    });
-    if (!postResp.ok) {
-      const summaryTS = postResp ? postResp.ts : "n/a";
-      const postSummaryErrorMsg =
-        `Error posting summary: ${summaryTS} to channel: ${inputs.channel}. Error detail: ${postResp.error}`;
-      console.log(postSummaryErrorMsg);
+    let error;
+    try {
+      // 1. Post a message in thread to the draft announcement message
+      const postResp = await client.chat.postMessage({
+        channel: inputs.channel,
+        thread_ts: "",
+        blocks: blocks,
+        unfurl_links: false,
+      });
 
-      // 2. Complete function with an error message
-      return { error: postSummaryErrorMsg };
+      if (!postResp.ok) {
+        const summaryTS = postResp ? postResp.ts : "n/a";
+        const error =
+          `Error posting summary: ${summaryTS} to channel: ${inputs.channel}. Error detail: ${postResp.error}`;  
+      }
+    } catch (err) {
+      error = `Failed to call AoC API due to ${err}`;
     }
-    return { outputs: {} };
+
+    return { error, outputs: {} };
   },
 );

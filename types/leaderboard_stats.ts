@@ -12,14 +12,14 @@ export const LeaderboardStatsCustomType = DefineType({
     },
     daily_silver_stars: {
       type: Schema.types.array,
-      items: { 
-        type: Schema.types.number
+      items: {
+        type: Schema.types.number,
       },
     },
     daily_gold_stars: {
       type: Schema.types.array,
-      items: { 
-        type: Schema.types.number 
+      items: {
+        type: Schema.types.number,
       },
     },
   },

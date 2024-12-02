@@ -3,7 +3,9 @@ import { TriggerContextData, TriggerTypes } from "deno-slack-api/mod.ts";
 import { PostStatisticsWorkflow } from "../workflows/post_statistics.ts";
 import "std/dotenv/load.ts";
 
-const StarProgressLinkTrigger: Trigger<typeof PostStatisticsWorkflow.definition> = {
+const StarProgressLinkTrigger: Trigger<
+  typeof PostStatisticsWorkflow.definition
+> = {
   type: TriggerTypes.Shortcut,
   name: "Star progress link trigger",
   workflow: `#/workflows/${PostStatisticsWorkflow.definition.callback_id}`,
