@@ -18,8 +18,8 @@ const DailyStarProgressTrigger: Trigger<
     },
   },
   schedule: {
-    start_time: "2024-12-02T21:00:00Z",
-    end_time: "2024-12-30T23:59:59Z",
+    start_time: "2025-12-01T21:00:00Z",
+    end_time: "2025-12-22T23:59:59Z",
     frequency: {
       type: "hourly",
       repeats_every: 24,

@@ -28,7 +28,7 @@ export default SlackFunction(
   PostStatisticsFunctionDefinition,
   async ({ inputs, client }) => { // Provide any context properties, like `inputs`, `env`, or `token`
     const day_today = (new Date()).getDate();
-    const day_today_capped = Math.min(25, day_today);
+    const day_today_capped = Math.min(12, day_today);
     const text = [
       `Total star progress of the team for day ${day_today_capped} is *${inputs.stats.progress}%*.`,
     ];
@@ -72,8 +72,8 @@ export default SlackFunction(
 
       if (!postResp.ok) {
         const summaryTS = postResp ? postResp.ts : "n/a";
-        const error =
-          `Error posting summary: ${summaryTS} to channel: ${inputs.channel}. Error detail: ${postResp.error}`;  
+        error =
+          `Error posting summary: ${summaryTS} to channel: ${inputs.channel}. Error detail: ${postResp.error}`;
       }
     } catch (err) {
       error = `Failed to call AoC API due to ${err}`;
