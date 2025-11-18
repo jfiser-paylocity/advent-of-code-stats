@@ -1,15 +1,19 @@
-# Blank Template
+# Advent of Code Stats Bot
 
-This is a blank template used to build out automations using the Slack CLI.
+A Slack bot that posts daily Advent of Code leaderboard statistics and progress
+visualizations to your team's Slack channel. The bot automatically fetches data
+from your private Advent of Code leaderboard, calculates completion statistics,
+generates progress charts, and posts updates.
 
 **Guide Outline**:
 
 - [Setup](#setup)
+  - [Prerequisites](#prerequisites)
   - [Install the Slack CLI](#install-the-slack-cli)
-  - [Clone the Template](#clone-the-template)
+  - [Clone the Repository](#clone-the-repository)
+  - [Configure Environment Variables](#configure-environment-variables)
 - [Running Your Project Locally](#running-your-project-locally)
 - [Creating Triggers](#creating-triggers)
-- [Datastores](#datastores)
 - [Testing](#testing)
 - [Deploying Your App](#deploying-your-app)
 - [Viewing Activity Logs](#viewing-activity-logs)
@@ -20,118 +24,154 @@ This is a blank template used to build out automations using the Slack CLI.
 
 ## Setup
 
-Before getting started, first make sure you have a development workspace where
-you have permission to install apps. **Please note that the features in this
-project require that the workspace be part of
-[a Slack paid plan](https://slack.com/pricing).**
+### Prerequisites
+
+Before getting started, make sure you have:
+
+- A Slack workspace where you have permission to install apps
+- The workspace must be part of [a Slack paid plan](https://slack.com/pricing)
+- An Advent of Code private leaderboard (create one at
+  [adventofcode.com](https://adventofcode.com))
+- Your Advent of Code session cookie (for API authentication)
 
 ### Install the Slack CLI
 
-To use this template, you need to install and configure the Slack CLI.
-Step-by-step instructions can be found in our
+To use this project, you need to install and configure the Slack CLI.
+Step-by-step instructions can be found in the
 [Quickstart Guide](https://api.slack.com/automation/quickstart).
 
-### Clone the Template
+_Notes:_
 
-Start by cloning this repository:
+- To avoid conflicts with your regular slack installation, install the new Slack
+  CLI using an alias, for example `slack-cli`. More instructions can be found in
+  [official documentation](https://docs.slack.dev/tools/slack-cli/guides/installing-the-slack-cli-for-mac-and-linux).
+
+### Clone the Repository
+
+Clone this repository to your local machine:
 
 ```zsh
-# Clone this project onto your machine
-$ slack create my-app -t slack-samples/deno-blank-template
+# Clone this project
+$ git clone https://github.com/jfiser-paylocity/advent-of-code-stats.git
 
 # Change into the project directory
-$ cd my-app
+$ cd advent-of-code-stats
 ```
+
+### Configure Environment Variables
+
+1. Copy the example environment file:
+
+```zsh
+$ cp .env.example .env
+```
+
+2. Edit the `.env` file and add your credentials:
+
+**How to get these values:**
+
+- **Session Cookie**: Log into [adventofcode.com](https://adventofcode.com),
+  open your browser's developer tools (F12), go to Application/Storage >
+  Cookies, and copy the value of the `session` cookie
+- **Leaderboard ID**: Found in your private leaderboard URL:
+  `https://adventofcode.com/[year]/leaderboard/private/view/[ID]`
+- **Channel ID**: Right-click on the Slack channel, select "View channel
+  details", and find the Channel ID at the bottom
 
 ## Running Your Project Locally
 
 While building your app, you can see your changes appear in your workspace in
-real-time with `slack run`. You'll know an app is the development version if the
-name has the string `(local)` appended.
+real-time with `slack-cli run`. You'll know an app is the development version if
+the name has the string `(local)` appended.
 
 ```zsh
 # Run app locally
-$ slack run
+$ slack-cli run
 
 Connected, awaiting events
 ```
 
-To stop running locally, press `<CTRL> + C` to end the process.
+The bot will be available in your workspace as "Advent of Code (local)".
+
+To stop running locally, press `<Control> + C` to end the process.
 
 ## Creating Triggers
 
 [Triggers](https://api.slack.com/automation/triggers) are what cause workflows
-to run. These triggers can be invoked by a user, or automatically as a response
-to an event within Slack.
+to run. This project includes two types of triggers:
 
-When you `run` or `deploy` your project for the first time, the CLI will prompt
-you to create a trigger if one is found in the `triggers/` directory. For any
-subsequent triggers added to the application, each must be
-[manually added using the `trigger create` command](#manual-trigger-creation).
+### 1. Daily Star Progress Trigger (Scheduled)
 
-When creating triggers, you must select the workspace and environment that you'd
-like to create the trigger in. Each workspace can have a local development
-version (denoted by `(local)`), as well as a deployed version. _Triggers created
-in a local environment will only be available to use when running the
-application locally._
-
-### Link Triggers
-
-A [link trigger](https://api.slack.com/automation/triggers/link) is a type of
-trigger that generates a **Shortcut URL** which, when posted in a channel or
-added as a bookmark, becomes a link. When clicked, the link trigger will run the
-associated workflow.
-
-Link triggers are _unique to each installed version of your app_. This means
-that Shortcut URLs will be different across each workspace, as well as between
-[locally run](#running-your-project-locally) and
-[deployed apps](#deploying-your-app).
-
-With link triggers, after selecting a workspace and environment, the output
-provided will include a Shortcut URL. Copy and paste this URL into a channel as
-a message, or add it as a bookmark in a channel of the workspace you selected.
-Interacting with this link will run the associated workflow.
-
-**Note: triggers won't run the workflow unless the app is either running locally
-or deployed!**
-
-### Manual Trigger Creation
-
-To manually create a trigger, use the following command:
+Automatically posts statistics daily during Advent of Code (throughout December)
+at 9:00 PM UTC:
 
 ```zsh
-$ slack trigger create --trigger-def triggers/<YOUR_TRIGGER_FILE>.ts
+$ slack-cli trigger create --trigger-def triggers/daily_star_progress.ts
 ```
 
-## Datastores
+This creates a scheduled trigger that runs every 24 hours during the event
+period.
 
-For storing data related to your app, datastores offer secure storage on Slack
-infrastructure. The use of a datastore requires the
-`datastore:write`/`datastore:read` scopes to be present in your manifest.
+### 2. Star Progress Link Trigger (Manual)
+
+Creates a shortcut link that allows you to manually trigger a statistics post:
+
+```zsh
+$ slack-cli trigger create --trigger-def triggers/star_progress_link.ts
+```
+
+Copy the generated Shortcut URL and post it in your Slack channel. Clicking the
+link will immediately post the current statistics.
+
+### Important Notes
+
+- When creating triggers, select the workspace and environment (local or
+  deployed)
+- Triggers created in a local environment only work when running `slack-cli run`
+- Each workspace gets unique Shortcut URLs
+- Triggers won't run unless the app is running locally or deployed
+- You can view and manage triggers using `slack-cli trigger list`
 
 ## Testing
 
-Test filenames should be suffixed with `_test`.
-
-Run all tests with `deno test`:
+The project includes linting and formatting checks:
 
 ```zsh
-$ deno test
+# Run all tests (format check, lint, and unit tests)
+$ deno task test
+
+# Format code
+$ deno fmt
+
+# Lint code
+$ deno lint
 ```
+
+Test files should be suffixed with `_test.ts` and placed alongside their
+corresponding source files.
 
 ## Deploying Your App
 
-Once development is complete, deploy the app to Slack infrastructure using
-`slack deploy`:
+Once development is complete, deploy the app to Slack infrastructure:
 
 ```zsh
-$ slack deploy
+$ slack-cli deploy
 ```
 
-When deploying for the first time, you'll be prompted to
-[create a new link trigger](#creating-triggers) for the deployed version of your
-app. When that trigger is invoked, the workflow should run just as it did when
-developing locally (but without requiring your server to be running).
+During deployment:
+
+1. The CLI will build and upload your app to Slack's infrastructure
+2. You'll be prompted to create triggers for the deployed version
+3. The deployed app will appear in your workspace as "Advent of Code"
+
+After deployment:
+
+- Create the scheduled trigger for automatic daily posts
+- Create the link trigger for manual statistics requests
+- The app runs on Slack's infrastructure (no need to keep your local server
+  running)
+
+To update a deployed app, simply run `slack-cli deploy` again.
 
 ## Viewing Activity Logs
 
@@ -139,52 +179,67 @@ Activity logs of your application can be viewed live and as they occur with the
 following command:
 
 ```zsh
-$ slack activity --tail
+$ slack-cli activity --tail
 ```
 
 ## Project Structure
 
-### `.slack/`
+### `assets/`
 
-Contains `apps.dev.json` and `apps.json`, which include installation details for
-development and deployed apps.
-
-### `datastores/`
-
-[Datastores](https://api.slack.com/automation/datastores) securely store data
-for your application on Slack infrastructure. Required scopes to use datastores
-include `datastore:write` and `datastore:read`.
+Contains application assets like the app icon.
 
 ### `functions/`
 
 [Functions](https://api.slack.com/automation/functions) are reusable building
-blocks of automation that accept inputs, perform calculations, and provide
-outputs. Functions can be used independently or as steps in workflows.
+blocks that perform specific tasks:
+
+- **`fetch_leaderboard.ts`**: Fetches leaderboard data from Advent of Code API
+- **`create_leaderboard_stats.ts`**: Calculates statistics (completion
+  percentage, daily stars, etc.)
+- **`generate_bar_chart.ts`**: Generates visualization charts using QuickChart
+  API
+- **`post_stats_message.ts`**: Posts formatted statistics message to Slack
+  channel
 
 ### `triggers/`
 
 [Triggers](https://api.slack.com/automation/triggers) determine when workflows
-are run. A trigger file describes the scenario in which a workflow should be
-run, such as a user pressing a button or when a specific event occurs.
+run:
+
+- **`daily_star_progress.ts`**: Scheduled trigger for automatic daily posts (9
+  PM UTC)
+- **`star_progress_link.ts`**: Manual shortcut link trigger for on-demand
+  statistics
 
 ### `workflows/`
 
-A [workflow](https://api.slack.com/automation/workflows) is a set of steps
-(functions) that are executed in order.
+A [workflow](https://api.slack.com/automation/workflows) orchestrates the
+execution of functions:
 
-Workflows can be configured to run without user input or they can collect input
-by beginning with a [form](https://api.slack.com/automation/forms) before
-continuing to the next step.
+- **`post_statistics.ts`**: Main workflow that chains together fetching,
+  analyzing, visualizing, and posting statistics
+
+### `types/`
+
+TypeScript type definitions for data structures:
+
+- **`leaderboard.ts`**: Types for Advent of Code leaderboard data
+- **`leaderboard_stats.ts`**: Types for calculated statistics
 
 ### `manifest.ts`
 
 The [app manifest](https://api.slack.com/automation/manifest) contains the app's
-configuration. This file defines attributes like app name and description.
+configuration, including name, description, functions, workflows, required
+permissions (`chat:write`), and allowed outgoing domains (`adventofcode.com`,
+`quickchart.io`).
 
-### `slack.json`
+### `deno.jsonc`
 
-Used by the CLI to interact with the project's SDK dependencies. It contains
-script hooks that are executed by the CLI and implemented by the SDK.
+Deno configuration file with formatting, linting rules, and task definitions.
+
+### `.env.example`
+
+Template for environment variables needed to run the app.
 
 ## Resources
 
