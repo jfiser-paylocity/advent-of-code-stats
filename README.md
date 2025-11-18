@@ -66,7 +66,13 @@ $ cd advent-of-code-stats
 $ cp .env.example .env
 ```
 
-2. Edit the `.env` file and add your credentials:
+2. Edit the `.env` file and add your credentials
+
+At the time of deployment, you’ll need to upload all environment variables by running
+
+```zsh
+$ slack env add EXAMPLE_VARIABLE "example_value"
+```
 
 **How to get these values:**
 
@@ -98,7 +104,11 @@ To stop running locally, press `<Control> + C` to end the process.
 ## Creating Triggers
 
 [Triggers](https://api.slack.com/automation/triggers) are what cause workflows
-to run. This project includes two types of triggers:
+to run.
+
+Run `slack-cli trigger list` to see existing triggers in your workspace.
+
+This project includes two types of triggers:
 
 ### 1. Daily Star Progress Trigger (Scheduled)
 
@@ -106,7 +116,7 @@ Automatically posts statistics daily during Advent of Code (throughout December)
 at 9:00 PM UTC:
 
 ```zsh
-$ slack-cli trigger create --trigger-def triggers/daily_star_progress.ts
+$ slack-cli trigger update --trigger-id <TRIGGER_ID> --trigger-def triggers/daily_star_progress.ts
 ```
 
 This creates a scheduled trigger that runs every 24 hours during the event
@@ -117,7 +127,7 @@ period.
 Creates a shortcut link that allows you to manually trigger a statistics post:
 
 ```zsh
-$ slack-cli trigger create --trigger-def triggers/star_progress_link.ts
+$ slack-cli trigger update --trigger-id <TRIGGER_ID> --trigger-def triggers/star_progress_link.ts
 ```
 
 Copy the generated Shortcut URL and post it in your Slack channel. Clicking the
@@ -168,6 +178,7 @@ After deployment:
 
 - Create the scheduled trigger for automatic daily posts
 - Create the link trigger for manual statistics requests
+- Create/update all environment variables
 - The app runs on Slack's infrastructure (no need to keep your local server
   running)
 
