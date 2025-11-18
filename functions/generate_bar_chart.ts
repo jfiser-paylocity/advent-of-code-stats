@@ -134,7 +134,7 @@ export default SlackFunction(
     const chart_config_encoded = encodeURIComponent(chart_config_minify);
     const chart_background_encoded = encodeURIComponent(chart_background);
     const endpoint =
-      `https://quickchart.io/chart?w=740&h=270&v=2&f=png&bkg=${chart_background_encoded}&c=${chart_config_encoded}`;
+      `https://quickchart.io/chart?w=600&h=270&v=2&f=png&bkg=${chart_background_encoded}&c=${chart_config_encoded}`;
 
     return { outputs: { chart_url: endpoint } };
   },
