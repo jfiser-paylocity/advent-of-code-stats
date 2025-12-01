@@ -71,7 +71,7 @@ $ cp .env.example .env
 At the time of deployment, you’ll need to upload all environment variables by running
 
 ```zsh
-$ slack env add EXAMPLE_VARIABLE "example_value"
+$ slack-cli env add EXAMPLE_VARIABLE "example_value"
 ```
 
 **How to get these values:**
