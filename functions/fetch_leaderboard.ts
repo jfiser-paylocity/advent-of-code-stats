@@ -56,7 +56,7 @@ export default SlackFunction(
         const data = await response.json();
         members = Object.values(data.members).map(
           ({ completion_day_level, name, stars }) => {
-            return {
+            const member = {
               completion_day_level: Object.entries(completion_day_level).map(
                 ([day, levels]) => {
                   return {
@@ -66,9 +66,12 @@ export default SlackFunction(
                   };
                 },
               ),
-              name: name,
               stars: stars,
             };
+            if (name != null) {
+              member.name = name;
+            }
+            return member;
           },
         );
       }

@@ -80,7 +80,7 @@ export default SlackFunction(
             completion_level.star_2_timestamp < first_person_ts
           ) {
             first_person_ts = completion_level.star_2_timestamp;
-            first_person_name = member.name;
+            first_person_name = member.name || "Anonymous";
           }
         }
       }

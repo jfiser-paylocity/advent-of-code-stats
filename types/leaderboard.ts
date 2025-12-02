@@ -40,7 +40,7 @@ export const LeaderboardMemberCustomType = DefineType({
       type: Schema.types.number,
     },
   },
-  required: ["completion_day_level", "name", "stars"],
+  required: ["completion_day_level", "stars"],
 });
 
 // Define the array with the items as the custom type
