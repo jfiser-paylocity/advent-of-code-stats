@@ -30,9 +30,11 @@ export default SlackFunction(
     const day_today = (new Date()).getDate();
     const day_today_capped = Math.min(12, day_today);
     const text = [
-      `Total star progress of the team for day ${day_today_capped} is *${inputs.stats.progress}%*.`,
+      "Total star progress of the team",
+      `is *${inputs.stats.progress}%*.`,
     ];
     if (day_today == day_today_capped) {
+      text.splice(1, 0, `for day ${day_today_capped}`);
       if (inputs.stats.first_solution_today_by) {
         text.push(
           `First participant to complete all tasks today was *${inputs.stats.first_solution_today_by}*, congrats!`,
