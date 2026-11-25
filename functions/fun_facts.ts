@@ -50,6 +50,8 @@ interface Solve {
   member: FunFactMember;
   day: number;
   seconds: number;
+  /** When the star was earned, in seconds. */
+  finishedAt: number;
 }
 
 function part1Solves(members: FunFactMember[], year: number): Solve[] {
@@ -61,6 +63,7 @@ function part1Solves(members: FunFactMember[], year: number): Solve[] {
           member,
           day: level.day,
           seconds: level.star_1_timestamp - publishTimestamp(year, level.day),
+          finishedAt: level.star_1_timestamp,
         });
       }
     }
@@ -80,6 +83,7 @@ function part2Solves(members: FunFactMember[]): Solve[] {
           member,
           day: level.day,
           seconds: level.star_2_timestamp - level.star_1_timestamp,
+          finishedAt: level.star_2_timestamp,
         });
       }
     }
@@ -141,11 +145,24 @@ export function biggestGain(
   }.`;
 }
 
+/**
+ * Only jumps completed since today's puzzle was published count as "today".
+ * Once the puzzle's 24 hour window is over (or before it opens), there is no "today".
+ */
 export function fastestJumpToday(
   members: FunFactMember[],
-  day: number,
+  { day, year, now }: FunFactOptions,
 ): string | undefined {
-  const best = fastest(part2Solves(members).filter((s) => s.day === day));
+  const since = publishTimestamp(year, day);
+  const nowSeconds = now / 1000;
+  if (nowSeconds < since || nowSeconds >= since + DAY_SECONDS) {
+    return undefined;
+  }
+  const best = fastest(
+    part2Solves(members).filter((s) =>
+      s.finishedAt >= since && s.finishedAt <= nowSeconds
+    ),
+  );
   if (!best) {
     return undefined;
   }
@@ -216,11 +233,15 @@ export function streakLeaders(
     return undefined;
   }
   const names = leaders.map((m) => `*${displayName(m)}*`).sort();
-  const shown = names.length > 3
-    ? `${names.slice(0, 3).join(", ")} and ${names.length - 3} more`
-    : names.join(", ");
-  const verb = leaders.length === 1 ? "has" : "have";
-  return `🔥 ${shown} ${verb} a streak of ${max} days with both stars.`;
+  let shown: string;
+  if (names.length > 3) {
+    shown = `${names.slice(0, 3).join(", ")} and ${names.length - 3} more`;
+  } else if (names.length > 1) {
+    shown = `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+  } else {
+    shown = names[0];
+  }
+  return `🔥 Longest streak: ${shown}, ${max} days with both stars.`;
 }
 
 export function hardestDay(
@@ -230,7 +251,9 @@ export function hardestDay(
   if (members.length === 0) {
     return undefined;
   }
-  let best: { day: number; gold: number; gap: number } | undefined;
+  let best:
+    | { day: number; silver: number; gold: number; gap: number }
+    | undefined;
   for (let d = 1; d <= day; d++) {
     let silver = 0;
     let gold = 0;
@@ -244,14 +267,14 @@ export function hardestDay(
     }
     const gap = silver - gold;
     if (!best || gap > best.gap) {
-      best = { day: d, gold, gap };
+      best = { day: d, silver, gold, gap };
     }
   }
   if (!best || best.gap <= 0) {
     return undefined;
   }
-  const percent = Math.round((best.gold / members.length) * 100);
-  return `🧱 Toughest part 2 so far: day ${best.day}, only ${percent}% solved it.`;
+  const percent = Math.round((best.gap / members.length) * 100);
+  return `🧱 Toughest part 2 so far: day ${best.day}, ${percent}% of participants didn't complete it (${best.silver} ⭐ → ${best.gold} ⭐⭐).`;
 }
 
 export function topThree(members: FunFactMember[]): string | undefined {
@@ -274,7 +297,7 @@ export function buildFunFacts(
 ): string[] {
   return [
     biggestGain(members, now),
-    fastestJumpToday(members, day),
+    fastestJumpToday(members, { day, year, now }),
     fastestPart1Record(members, year),
     fastestPart2Record(members),
     streakLeaders(members, day),

@@ -79,12 +79,30 @@ Deno.test("fastest part 2 record uses star gap", () => {
   );
 });
 
-Deno.test("fastest jump only looks at the given day", () => {
+Deno.test("fastest jump only counts jumps since today's publish time", () => {
+  const options = { day: 1, year: YEAR, now: (publish(1) + 3600) * 1000 };
   assertEquals(
-    fastestJumpToday(members, 1),
+    fastestJumpToday(members, options),
     "⚡ Fastest jump from ⭐ to ⭐⭐ today: *Alice*, 5 min.",
   );
-  assertEquals(fastestJumpToday([bob], 2), undefined);
+  // Real time is long after the day's window: not "today" anymore.
+  assertEquals(
+    fastestJumpToday(members, {
+      day: 1,
+      year: YEAR,
+      now: (publish(1) + 2 * 86400) * 1000,
+    }),
+    undefined,
+  );
+  // Day 2 puzzle is out but nobody finished a jump since then: no message.
+  assertEquals(
+    fastestJumpToday(members, {
+      day: 2,
+      year: YEAR,
+      now: (publish(2) + 60) * 1000,
+    }),
+    undefined,
+  );
 });
 
 Deno.test("biggest gain counts stars in last 24h and breaks ties by day", () => {
@@ -103,15 +121,19 @@ Deno.test("biggest gain counts stars in last 24h and breaks ties by day", () => 
 Deno.test("streak needs at least 2 days and tolerates unsolved today", () => {
   assertEquals(
     streakLeaders(members, 3),
-    "🔥 *Alice* has a streak of 2 days with both stars.",
+    "🔥 Longest streak: *Alice*, 2 days with both stars.",
   );
   assertEquals(streakLeaders([bob], 2), undefined);
+  assertEquals(
+    streakLeaders([alice, { ...alice, name: "Zed" }], 3),
+    "🔥 Longest streak: *Alice* and *Zed*, 2 days with both stars.",
+  );
 });
 
 Deno.test("hardest day is the one with the biggest silver-gold gap", () => {
   assertEquals(
     hardestDay(members, 2),
-    "🧱 Toughest part 2 so far: day 2, only 50% solved it.",
+    "🧱 Toughest part 2 so far: day 2, 50% of participants didn't complete it (2 ⭐ → 1 ⭐⭐).",
   );
   assertEquals(hardestDay([], 2), undefined);
 });
