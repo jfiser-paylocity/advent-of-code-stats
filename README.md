@@ -51,7 +51,8 @@ _Notes:_
 
 The app runs on the [Deno](https://deno.com) runtime, which is required for
 `slack-cli run`, `deno task test`, `deno fmt` and `deno lint`. Install the
-pinned version used by this project with the provided script. The script installs Deno to `~/.deno` (override with `DENO_INSTALL`):
+pinned version used by this project with the provided script. The script
+installs Deno to `~/.deno` (override with `DENO_INSTALL`):
 
 ```zsh
 $ scripts/install-deno.sh
@@ -82,7 +83,8 @@ $ cp .env.example .env
 
 2. Edit the `.env` file and add your credentials
 
-At the time of deployment, you’ll need to upload all environment variables by running
+At the time of deployment, you’ll need to upload all environment variables by
+running
 
 ```zsh
 $ slack-cli env add EXAMPLE_VARIABLE "example_value"
@@ -120,7 +122,8 @@ To stop running locally, press `<Control> + C` to end the process.
 [Triggers](https://api.slack.com/automation/triggers) are what cause workflows
 to run.
 
-Run `slack-cli trigger list` to see existing triggers with their IDs in your workspace.
+Run `slack-cli trigger list` to see existing triggers with their IDs in your
+workspace.
 
 This project includes two types of triggers:
 
