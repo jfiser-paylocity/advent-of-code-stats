@@ -95,8 +95,12 @@ export default SlackFunction(
       100,
     );
 
+    const year = new Date().getFullYear();
     const data = {
       "progress": total_progress_percentage_capped,
+      "total_participants": total_participants,
+      "days_released": day_today,
+      "year": year,
       "first_solution_today_by": first_person_name,
       "daily_silver_stars": daily_silver_stars.map((value) =>
         ((value / total_participants) * 100).toFixed()
@@ -106,7 +110,7 @@ export default SlackFunction(
       ),
       "fun_facts": buildFunFacts(all_members, {
         day: day_today,
-        year: new Date().getFullYear(),
+        year,
         now: Date.now(),
       }),
     };

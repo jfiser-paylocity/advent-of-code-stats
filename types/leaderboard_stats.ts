@@ -22,6 +22,15 @@ export const LeaderboardStatsCustomType = DefineType({
         type: Schema.types.number,
       },
     },
+    total_participants: {
+      type: Schema.types.number,
+    },
+    days_released: {
+      type: Schema.types.number,
+    },
+    year: {
+      type: Schema.types.number,
+    },
     fun_facts: {
       type: Schema.types.array,
       items: {

@@ -7,6 +7,7 @@ import {
   formatDuration,
   FunFactMember,
   hardestDay,
+  nonParticipants,
   publishTimestamp,
   streakLeaders,
   topThree,
@@ -149,4 +150,17 @@ Deno.test("top three ranks by local score", () => {
 
 Deno.test("buildFunFacts skips facts without data", () => {
   assertEquals(buildFunFacts([], { day: 1, year: YEAR, now: 0 }), []);
+});
+
+Deno.test("nonParticipants", () => {
+  const ghost: FunFactMember = {
+    name: "Ghost",
+    stars: 0,
+    completion_day_level: [],
+  };
+  assertEquals(nonParticipants(members), undefined);
+  assertEquals(
+    nonParticipants([...members, ghost]),
+    "👻 No stars yet this year: *Ghost*.",
+  );
 });

@@ -291,6 +291,22 @@ export function topThree(members: FunFactMember[]): string | undefined {
   }`;
 }
 
+export function nonParticipants(members: FunFactMember[]): string | undefined {
+  const names = members
+    .filter((m) => m.stars === 0 && m.completion_day_level.length === 0)
+    .map((m) => `*${displayName(m)}*`)
+    .sort();
+  if (names.length === 0) {
+    return undefined;
+  }
+  const shown = names.length > 5
+    ? `${names.slice(0, 5).join(", ")} and ${names.length - 5} more`
+    : names.length > 1
+    ? `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`
+    : names[0];
+  return `👻 No stars yet this year: ${shown}.`;
+}
+
 export function buildFunFacts(
   members: FunFactMember[],
   { day, year, now }: FunFactOptions,
@@ -303,5 +319,6 @@ export function buildFunFacts(
     streakLeaders(members, day),
     hardestDay(members, day),
     topThree(members),
+    nonParticipants(members),
   ].filter((line): line is string => line !== undefined);
 }
