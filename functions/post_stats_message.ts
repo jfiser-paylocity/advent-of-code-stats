@@ -64,7 +64,7 @@ export default SlackFunction(
 
     let error;
     try {
-      // 1. Post a message in thread to the draft announcement message
+      // 1. Post the statistics message to the channel
       const postResp = await client.chat.postMessage({
         channel: inputs.channel,
         thread_ts: "",
@@ -76,6 +76,23 @@ export default SlackFunction(
         const summaryTS = postResp ? postResp.ts : "n/a";
         error =
           `Error posting summary: ${summaryTS} to channel: ${inputs.channel}. Error detail: ${postResp.error}`;
+      } else if (inputs.stats.fun_facts?.length) {
+        // 2. Post fun facts in the thread of the statistics message.
+        // A failure here must not hide the already posted main message.
+        try {
+          const threadResp = await client.chat.postMessage({
+            channel: inputs.channel,
+            thread_ts: postResp.ts,
+            text: inputs.stats.fun_facts.join("\n"),
+            unfurl_links: false,
+          });
+          if (!threadResp.ok) {
+            error =
+              `Error posting fun facts to thread ${postResp.ts}. Error detail: ${threadResp.error}`;
+          }
+        } catch (err) {
+          error = `Failed to post fun facts to thread due to ${err}`;
+        }
       }
     } catch (err) {
       error = `Failed to call AoC API due to ${err}`;

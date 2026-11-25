@@ -22,6 +22,12 @@ export const LeaderboardStatsCustomType = DefineType({
         type: Schema.types.number,
       },
     },
+    fun_facts: {
+      type: Schema.types.array,
+      items: {
+        type: Schema.types.string,
+      },
+    },
   },
   required: ["progress", "daily_silver_stars", "daily_gold_stars"],
 });

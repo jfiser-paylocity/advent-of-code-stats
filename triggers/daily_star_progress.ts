@@ -1,7 +1,7 @@
 import { Trigger } from "deno-slack-api/types.ts";
 import { TriggerTypes } from "deno-slack-api/mod.ts";
 import { PostStatisticsWorkflow } from "../workflows/post_statistics.ts";
-import "std/dotenv/load.ts";
+import "@std/dotenv/load";
 
 const DailyStarProgressTrigger: Trigger<
   typeof PostStatisticsWorkflow.definition
@@ -18,8 +18,8 @@ const DailyStarProgressTrigger: Trigger<
     },
   },
   schedule: {
-    start_time: "2025-12-01T21:00:00Z",
-    end_time: "2025-12-22T23:59:59Z",
+    start_time: "2026-12-01T21:00:00Z",
+    end_time: "2026-12-22T23:59:59Z",
     frequency: {
       type: "hourly",
       repeats_every: 24,

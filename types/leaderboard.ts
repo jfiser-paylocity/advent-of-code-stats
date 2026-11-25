@@ -39,6 +39,9 @@ export const LeaderboardMemberCustomType = DefineType({
     stars: {
       type: Schema.types.number,
     },
+    local_score: {
+      type: Schema.types.number,
+    },
   },
   required: ["completion_day_level", "stars"],
 });

@@ -1,6 +1,7 @@
 import { DefineFunction, SlackFunction } from "deno-slack-sdk/mod.ts";
 import { LeaderboardMemberArrayType } from "../types/leaderboard.ts";
 import { LeaderboardStatsCustomType } from "../types/leaderboard_stats.ts";
+import { buildFunFacts } from "./fun_facts.ts";
 
 export const CreateLeaderboardStatsFunctionDefinition = DefineFunction({
   callback_id: "create_leaderboard_stats",
@@ -103,6 +104,11 @@ export default SlackFunction(
       "daily_gold_stars": daily_gold_stars.map((value) =>
         ((value / total_participants) * 100).toFixed()
       ),
+      "fun_facts": buildFunFacts(all_members, {
+        day: day_today,
+        year: new Date().getFullYear(),
+        now: Date.now(),
+      }),
     };
 
     return { outputs: { stats: data } };
