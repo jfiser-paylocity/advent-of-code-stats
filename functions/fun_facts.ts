@@ -259,7 +259,8 @@ export function topThree(members: FunFactMember[]): string | undefined {
     .map((m) => ({ name: displayName(m), score: m.local_score ?? m.stars }))
     .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
     .slice(0, 3);
-  if (ranked.length === 0) {
+  // Sorted descending, so a zero top score means everyone has zero.
+  if (ranked.length === 0 || ranked[0].score === 0) {
     return undefined;
   }
   return `🏆 Top ${ranked.length}: ${

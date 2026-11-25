@@ -119,6 +119,10 @@ Deno.test("hardest day is the one with the biggest silver-gold gap", () => {
 Deno.test("top three ranks by local score", () => {
   assertEquals(topThree(members), "🏆 Top 2: Anonymous 70, Alice 50");
   assertEquals(topThree([]), undefined);
+  assertEquals(
+    topThree([{ ...alice, local_score: 0 }, { ...bob, local_score: 0 }]),
+    undefined,
+  );
 });
 
 Deno.test("buildFunFacts skips facts without data", () => {
