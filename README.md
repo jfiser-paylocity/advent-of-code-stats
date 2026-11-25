@@ -10,6 +10,7 @@ generates progress charts, and posts updates.
 - [Setup](#setup)
   - [Prerequisites](#prerequisites)
   - [Install the Slack CLI](#install-the-slack-cli)
+  - [Install Deno](#install-deno)
   - [Clone the Repository](#clone-the-repository)
   - [Configure Environment Variables](#configure-environment-variables)
 - [Running Your Project Locally](#running-your-project-locally)
@@ -45,6 +46,19 @@ _Notes:_
 - To avoid conflicts with your regular slack installation, install the new Slack
   CLI using an alias, for example `slack-cli`. More instructions can be found in
   [official documentation](https://docs.slack.dev/tools/slack-cli/guides/installing-the-slack-cli-for-mac-and-linux).
+
+### Install Deno
+
+The app runs on the [Deno](https://deno.com) runtime, which is required for
+`slack-cli run`, `deno task test`, `deno fmt` and `deno lint`. Install the
+pinned version used by this project with the provided script. The script installs Deno to `~/.deno` (override with `DENO_INSTALL`):
+
+```zsh
+$ scripts/install-deno.sh
+
+# Verify the installation
+$ deno --version
+```
 
 ### Clone the Repository
 
@@ -106,7 +120,7 @@ To stop running locally, press `<Control> + C` to end the process.
 [Triggers](https://api.slack.com/automation/triggers) are what cause workflows
 to run.
 
-Run `slack-cli trigger list` to see existing triggers in your workspace.
+Run `slack-cli trigger list` to see existing triggers with their IDs in your workspace.
 
 This project includes two types of triggers:
 
@@ -116,6 +130,10 @@ Automatically posts statistics daily during Advent of Code (throughout December)
 at 9:00 PM UTC:
 
 ```zsh
+# First time: create the trigger
+$ slack-cli trigger create --trigger-def triggers/daily_star_progress.ts
+
+# Later: update an existing trigger (ID from `slack-cli trigger list`)
 $ slack-cli trigger update --trigger-id <TRIGGER_ID> --trigger-def triggers/daily_star_progress.ts
 ```
 
@@ -127,6 +145,10 @@ period.
 Creates a shortcut link that allows you to manually trigger a statistics post:
 
 ```zsh
+# First time: create the trigger
+$ slack-cli trigger create --trigger-def triggers/star_progress_link.ts
+
+# Later: update an existing trigger (ID from `slack-cli trigger list`)
 $ slack-cli trigger update --trigger-id <TRIGGER_ID> --trigger-def triggers/star_progress_link.ts
 ```
 
