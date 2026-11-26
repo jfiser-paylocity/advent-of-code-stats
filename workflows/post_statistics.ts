@@ -47,6 +47,7 @@ PostStatisticsWorkflow.addStep(
   {
     channel: PostStatisticsWorkflow.inputs.channel,
     stats: stepStatistics.outputs.stats,
+    members: stepLeaderboard.outputs.members,
     bar_chart_url: stepBarChart.outputs.chart_url,
   },
 );

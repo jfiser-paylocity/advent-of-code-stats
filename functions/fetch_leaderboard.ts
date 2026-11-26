@@ -55,8 +55,9 @@ export default SlackFunction(
         // Map to custom type
         const data = await response.json();
         members = Object.values(data.members).map(
-          ({ completion_day_level, name, stars, local_score }) => {
+          ({ id, completion_day_level, name, stars, local_score }) => {
             const member = {
+              id,
               completion_day_level: Object.entries(completion_day_level).map(
                 ([day, levels]) => {
                   return {

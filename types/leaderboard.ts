@@ -30,6 +30,9 @@ export const LeaderboardMemberCustomType = DefineType({
   name: "LeaderboardMember",
   type: Schema.types.object,
   properties: {
+    id: {
+      type: Schema.types.number,
+    },
     completion_day_level: {
       type: LeaderboardCompletionLevelArrayType,
     },

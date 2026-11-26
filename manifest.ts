@@ -31,6 +31,10 @@ export default Manifest({
     LeaderboardMemberArrayType,
     LeaderboardStatsCustomType,
   ],
-  outgoingDomains: ["adventofcode.com", "quickchart.io"],
-  botScopes: ["chat:write"],
+  outgoingDomains: [
+    "adventofcode.com",
+    "quickchart.io",
+    "files.slack.com",
+  ],
+  botScopes: ["chat:write", "files:write"],
 });
