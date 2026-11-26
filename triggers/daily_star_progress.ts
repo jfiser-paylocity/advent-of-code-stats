@@ -1,7 +1,7 @@
 import { Trigger } from "deno-slack-api/types.ts";
 import { TriggerTypes } from "deno-slack-api/mod.ts";
 import { PostStatisticsWorkflow } from "../workflows/post_statistics.ts";
-import { requireEnv } from "./require_env.ts";
+import { requireEnv, requireEnvList } from "./require_env.ts";
 
 /**
  * The schedule is pinned to one event on purpose. Every year a new Slack
@@ -21,8 +21,9 @@ const DailyStarProgressTrigger: Trigger<
     channel: {
       value: requireEnv("ADVENT_OF_CODE_STATS_CHANNEL_ID"),
     },
-    leaderboard_1: {
-      value: requireEnv("ADVENT_OF_CODE_STATS_LEADERBOARD_ID_1"),
+    leaderboard_ids: {
+      // The CLI cannot send an array value, so IDs travel as "1,2,3".
+      value: requireEnvList("ADVENT_OF_CODE_STATS_LEADERBOARD_IDS").join(","),
     },
   },
   schedule: {

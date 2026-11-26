@@ -95,8 +95,13 @@ $ slack-cli env add EXAMPLE_VARIABLE "example_value"
 - **Session Cookie**: Log into [adventofcode.com](https://adventofcode.com),
   open your browser's developer tools (F12), go to Application/Storage >
   Cookies, and copy the value of the `session` cookie
-- **Leaderboard ID**: Found in your private leaderboard URL:
-  `https://adventofcode.com/[year]/leaderboard/private/view/[ID]`
+- **Leaderboard IDs** (`ADVENT_OF_CODE_STATS_LEADERBOARD_IDS`): Found in your
+  private leaderboard URL:
+  `https://adventofcode.com/[year]/leaderboard/private/view/[ID]`. Use a
+  comma-separated list for several leaderboards, e.g. `123456,789012`. Members
+  are merged by user and the local score is recomputed for the merged set.
+- `SLACK_APP` in `.env` is only used locally by `scripts/deploy.sh` and is not
+  uploaded (see `ENV_UPLOAD_EXCLUDE` in the script).
 - **Channel ID**: Right-click on the Slack channel, select "View channel
   details", and find the Channel ID at the bottom
 

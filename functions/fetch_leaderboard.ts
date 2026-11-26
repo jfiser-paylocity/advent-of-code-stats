@@ -25,12 +25,13 @@ export const FetchLeaderboardFunctionDefinition = DefineFunction({
   source_file: "functions/fetch_leaderboard.ts",
   input_parameters: {
     properties: {
-      leaderboard_id: {
+      leaderboard_ids: {
         type: Schema.types.string,
-        description: "Leaderboard ID",
+        description:
+          "Comma-separated leaderboard IDs, members are merged by user ID",
       },
     },
-    required: ["leaderboard_id"],
+    required: ["leaderboard_ids"],
   },
   output_parameters: {
     properties: {
@@ -73,6 +74,110 @@ const truncate = (text: string) =>
     ? `${text.slice(0, MAX_ERROR_BODY_LENGTH)}…`
     : text;
 
+type MappedMember = ReturnType<typeof mapLeaderboard>[number];
+
+/**
+ * Merge members of several leaderboards. A user has the same stars and
+ * timestamps on every board, so the first occurrence is kept as is.
+ */
+export function mergeMembers(boards: MappedMember[][]): MappedMember[] {
+  const byId = new Map<number, MappedMember>();
+  for (const member of boards.flat()) {
+    if (!byId.has(member.id)) byId.set(member.id, member);
+  }
+  return [...byId.values()];
+}
+
+/**
+ * AoC local score depends on the size of one board, so it is not comparable
+ * between boards. Recompute it for the merged set: for each star the first
+ * member gets N points (N = member count), the next N - 1, and so on.
+ */
+export function recomputeLocalScores(members: MappedMember[]): MappedMember[] {
+  const n = members.length;
+  const scores = new Map<number, number>(members.map((m) => [m.id, 0]));
+  const stars = new Map<string, { id: number; ts: number }[]>();
+  for (const { id, completion_day_level } of members) {
+    for (
+      const { day, star_1_timestamp, star_2_timestamp } of completion_day_level
+    ) {
+      for (
+        const [part, ts] of [[1, star_1_timestamp], [
+          2,
+          star_2_timestamp,
+        ]] as const
+      ) {
+        if (ts === undefined) continue;
+        const key = `${day}-${part}`;
+        stars.set(key, [...(stars.get(key) ?? []), { id, ts }]);
+      }
+    }
+  }
+  for (const entries of stars.values()) {
+    // Ties keep a stable order by member ID.
+    entries.sort((a, b) => a.ts - b.ts || a.id - b.id);
+    entries.forEach(({ id }, rank) => {
+      scores.set(id, (scores.get(id) ?? 0) + n - rank);
+    });
+  }
+  return members.map((m) => ({ ...m, local_score: scores.get(m.id) ?? 0 }));
+}
+
+/** Fetch one leaderboard. Errors name the leaderboard ID. */
+async function fetchOne(
+  id: string,
+  year: number,
+  cookie: string,
+): Promise<{ members: MappedMember[] } | { error: string }> {
+  const endpoint =
+    `https://adventofcode.com/${year}/leaderboard/private/view/${id}.json`;
+  try {
+    const response = await fetch(endpoint, {
+      method: "GET",
+      headers: {
+        Cookie: `session=${cookie}`,
+        "User-Agent": "github.com/jfiser-paylocity/advent-of-code-stats",
+      },
+      // AoC redirects to a HTML page when the session is not valid. Do not
+      // follow it, so the failure is reported as such and not as bad JSON.
+      redirect: "manual",
+      // Do not hang the workflow if AoC is slow or unreachable.
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+    if (response.status >= 300 && response.status < 400) {
+      await response.body?.cancel();
+      return {
+        error: `AoC API redirected (status: ${response.status}, location: ${
+          response.headers.get("location")
+        }), ${EXPIRED_COOKIE_HINT}`,
+      };
+    }
+    if (response.status !== 200) {
+      const body = truncate(await response.text());
+      const hint = response.status === 400 || response.status === 401 ||
+          response.status === 403
+        ? `, ${EXPIRED_COOKIE_HINT} or the leaderboard ID is wrong`
+        : "";
+      return {
+        error:
+          `Failed to call AoC API (status: ${response.status}${hint}, body: ${body})`,
+      };
+    }
+    const contentType = response.headers.get("content-type") ?? "";
+    if (!contentType.includes("json")) {
+      const body = truncate(await response.text());
+      return {
+        error:
+          `AoC API returned ${contentType} instead of JSON, ${EXPIRED_COOKIE_HINT} (body: ${body})`,
+      };
+    }
+    const data: AocLeaderboard = await response.json();
+    return { members: mapLeaderboard(data) };
+  } catch (err) {
+    return { error: `Failed to call AoC API due to ${err}` };
+  }
+}
+
 export default SlackFunction(
   FetchLeaderboardFunctionDefinition,
   async ({ inputs, env }) => {
@@ -83,55 +188,32 @@ export default SlackFunction(
           "Missing env var ADVENT_OF_CODE_STATS_SESSION_COOKIE (set it with `slack env add`)",
       };
     }
+    const ids = [
+      ...new Set(
+        inputs.leaderboard_ids.split(",").map((id) => id.trim()).filter(
+          Boolean,
+        ),
+      ),
+    ];
+    if (ids.length === 0) return { error: "No leaderboard IDs given" };
     const fetched_at = Date.now();
     // Outside December this is last year's event (its final results).
     const { year } = eventClock(fetched_at);
-    const endpoint =
-      `https://adventofcode.com/${year}/leaderboard/private/view/${inputs.leaderboard_id}.json`;
-    try {
-      const response = await fetch(endpoint, {
-        method: "GET",
-        headers: {
-          Cookie: `session=${cookie}`,
-          "User-Agent": "github.com/jfiser-paylocity/advent-of-code-stats",
-        },
-        // AoC redirects to a HTML page when the session is not valid. Do not
-        // follow it, so the failure is reported as such and not as bad JSON.
-        redirect: "manual",
-        // Do not hang the workflow if AoC is slow or unreachable.
-        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      });
-      if (response.status >= 300 && response.status < 400) {
-        await response.body?.cancel();
-        return {
-          error: `AoC API redirected (status: ${response.status}, location: ${
-            response.headers.get("location")
-          }), ${EXPIRED_COOKIE_HINT}`,
-        };
+    const results = await Promise.all(
+      ids.map(async (id) => ({ id, result: await fetchOne(id, year, cookie) })),
+    );
+    for (const { id, result } of results) {
+      if ("error" in result) {
+        return { error: `Leaderboard ${id}: ${result.error}` };
       }
-      if (response.status !== 200) {
-        const body = truncate(await response.text());
-        const hint = response.status === 400 || response.status === 401 ||
-            response.status === 403
-          ? `, ${EXPIRED_COOKIE_HINT} or the leaderboard ID is wrong`
-          : "";
-        return {
-          error:
-            `Failed to call AoC API (status: ${response.status}${hint}, body: ${body})`,
-        };
-      }
-      const contentType = response.headers.get("content-type") ?? "";
-      if (!contentType.includes("json")) {
-        const body = truncate(await response.text());
-        return {
-          error:
-            `AoC API returned ${contentType} instead of JSON, ${EXPIRED_COOKIE_HINT} (body: ${body})`,
-        };
-      }
-      const data: AocLeaderboard = await response.json();
-      return { outputs: { members: mapLeaderboard(data), fetched_at } };
-    } catch (err) {
-      return { error: `Failed to call AoC API due to ${err}` };
     }
+    const boards = results.map(({ result }) =>
+      (result as { members: MappedMember[] }).members
+    );
+    // One board: keep AoC's own local score and stars untouched.
+    const members = boards.length === 1
+      ? boards[0]
+      : recomputeLocalScores(mergeMembers(boards));
+    return { outputs: { members, fetched_at } };
   },
 );

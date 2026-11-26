@@ -1,4 +1,4 @@
-import { requireEnv } from "../triggers/require_env.ts";
+import { requireEnv, requireEnvList } from "../triggers/require_env.ts";
 
 const NAME = "AOC_STATS_REQUIRE_ENV_TEST";
 
@@ -22,6 +22,40 @@ for (const [label, value] of [["unset", undefined], ["empty", ""]]) {
     } catch (err) {
       const message = (err as Error).message;
       if (!message.startsWith(`Missing env var ${NAME}.`)) throw err;
+    } finally {
+      Deno.env.delete(NAME);
+    }
+  });
+}
+
+for (
+  const [label, raw, expected] of [
+    ["single", "123", ["123"]],
+    ["multiple with whitespace", " 1, 2 ,3 ", ["1", "2", "3"]],
+    ["duplicates and empty entries", "1,,2,1,", ["1", "2"]],
+  ] as const
+) {
+  Deno.test(`requireEnvList parses ${label}`, () => {
+    Deno.env.set(NAME, raw);
+    try {
+      const got = requireEnvList(NAME);
+      if (got.join("|") !== expected.join("|")) {
+        throw new Error(`got ${got}`);
+      }
+    } finally {
+      Deno.env.delete(NAME);
+    }
+  });
+}
+
+for (const raw of ["abc", "1,x", ",", "12a"]) {
+  Deno.test(`requireEnvList rejects "${raw}"`, () => {
+    Deno.env.set(NAME, raw);
+    try {
+      requireEnvList(NAME);
+      throw new Error("did not throw");
+    } catch (err) {
+      if (!(err as Error).message.includes("comma-separated list")) throw err;
     } finally {
       Deno.env.delete(NAME);
     }

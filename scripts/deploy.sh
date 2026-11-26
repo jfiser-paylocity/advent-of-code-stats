@@ -39,7 +39,11 @@ if [ "$SKIP_TESTS" -eq 0 ]; then
   deno task test
 fi
 
-# Upload every KEY=VALUE line of .env as a remote env var.
+# Keys in .env that are local-only and must not be uploaded (space-separated).
+ENV_UPLOAD_EXCLUDE="SLACK_APP"
+
+# Upload every KEY=VALUE line of .env as a remote env var, except the keys
+# listed in ENV_UPLOAD_EXCLUDE.
 upload_env() {
   [ -f .env ] || { echo ".env not found" >&2; exit 1; }
   echo "==> Uploading env vars from .env"
@@ -54,6 +58,9 @@ upload_env() {
       \'*\') value=${value#\'}; value=${value%\'} ;;
     esac
     [ -n "$key" ] || continue
+    case " $ENV_UPLOAD_EXCLUDE " in
+      *" $key "*) echo "  $key (skipped)"; continue ;;
+    esac
     echo "  $key"
     "$SLACK_CLI" env add --app "$SLACK_APP" "$key" "$value"
   done < .env

@@ -1,7 +1,7 @@
 import { Trigger } from "deno-slack-api/types.ts";
 import { TriggerContextData, TriggerTypes } from "deno-slack-api/mod.ts";
 import { PostStatisticsWorkflow } from "../workflows/post_statistics.ts";
-import { requireEnv } from "./require_env.ts";
+import { requireEnvList } from "./require_env.ts";
 
 const StarProgressLinkTrigger: Trigger<
   typeof PostStatisticsWorkflow.definition
@@ -13,8 +13,9 @@ const StarProgressLinkTrigger: Trigger<
     channel: {
       value: TriggerContextData.Shortcut.channel_id,
     },
-    leaderboard_1: {
-      value: requireEnv("ADVENT_OF_CODE_STATS_LEADERBOARD_ID_1"),
+    leaderboard_ids: {
+      // The CLI cannot send an array value, so IDs travel as "1,2,3".
+      value: requireEnvList("ADVENT_OF_CODE_STATS_LEADERBOARD_IDS").join(","),
     },
   },
 };

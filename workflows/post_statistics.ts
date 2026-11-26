@@ -12,19 +12,19 @@ export const PostStatisticsWorkflow = DefineWorkflow({
       channel: {
         type: Schema.slack.types.channel_id,
       },
-      leaderboard_1: {
+      leaderboard_ids: {
         type: Schema.types.string,
-        description: "First leaderboard ID",
+        description: "Comma-separated leaderboard IDs",
       },
     },
-    required: ["leaderboard_1", "channel"],
+    required: ["leaderboard_ids", "channel"],
   },
 });
 
 const stepLeaderboard = PostStatisticsWorkflow.addStep(
   FetchLeaderboardFunctionDefinition,
   {
-    leaderboard_id: PostStatisticsWorkflow.inputs.leaderboard_1,
+    leaderboard_ids: PostStatisticsWorkflow.inputs.leaderboard_ids,
   },
 );
 
