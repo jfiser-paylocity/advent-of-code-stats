@@ -32,6 +32,7 @@ const stepStatistics = PostStatisticsWorkflow.addStep(
   CreateLeaderboardStatsFunctionDefinition,
   {
     all_members: stepLeaderboard.outputs.members,
+    fetched_at: stepLeaderboard.outputs.fetched_at,
   },
 );
 

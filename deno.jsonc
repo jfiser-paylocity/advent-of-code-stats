@@ -30,6 +30,9 @@
   },
   "lock": false,
   "tasks": {
-    "test": "deno fmt --check && deno lint && deno test --allow-read"
+    // Tests only cover the pure helpers, so type check the Slack functions
+    // and triggers (everything reachable from the manifest) explicitly.
+    "check": "deno check manifest.ts triggers/",
+    "test": "deno fmt --check && deno lint && deno task check && deno test --allow-read"
   }
 }

@@ -8,10 +8,10 @@ import {
   FunFactMember,
   hardestDay,
   nonParticipants,
-  publishTimestamp,
   streakLeaders,
   topThree,
 } from "../functions/fun_facts.ts";
+import { publishTimestamp } from "../functions/aoc_time.ts";
 
 function assertEquals<T>(actual: T, expected: T) {
   const a = JSON.stringify(actual);
@@ -60,10 +60,6 @@ Deno.test("formatDuration", () => {
   assertEquals(formatDuration(300), "5 min");
   assertEquals(formatDuration(3600), "1h");
   assertEquals(formatDuration(3 * 3600 + 12 * 60), "3h 12m");
-});
-
-Deno.test("publishTimestamp is 05:00 UTC", () => {
-  assertEquals(publishTimestamp(2025, 1), 1764565200);
 });
 
 Deno.test("fastest part 1 record uses publish time", () => {
@@ -134,7 +130,7 @@ Deno.test("streak needs at least 2 days and tolerates unsolved today", () => {
 Deno.test("hardest day is the one with the biggest silver-gold gap", () => {
   assertEquals(
     hardestDay(members, 2),
-    "🧱 Toughest part 2 so far: day 2, 50% of participants didn't complete it (2 ⭐ → 1 ⭐⭐).",
+    "🧱 Toughest part 2 so far: day 2, 50% of participants solved part 1 but not part 2 (2 ⭐ → 1 ⭐⭐).",
   );
   assertEquals(hardestDay([], 2), undefined);
 });
@@ -162,5 +158,29 @@ Deno.test("nonParticipants", () => {
   assertEquals(
     nonParticipants([...members, ghost]),
     "👻 No stars yet this year: *Ghost*.",
+  );
+});
+
+Deno.test("hardest day percentage is the difference of rounded chart values", () => {
+  // 3 members: silver 2/3 -> 67, gold 1/3 -> 33. Raw gap 33.3 -> 33, chart gap 34.
+  const mk = (name: string, s: boolean, g: boolean) => ({
+    ...alice,
+    name,
+    completion_day_level: s
+      ? [{
+        day: 1,
+        star_1_timestamp: 1,
+        ...(g ? { star_2_timestamp: 2 } : {}),
+      }]
+      : [],
+  });
+  const trio = [
+    mk("A", true, true),
+    mk("B", true, false),
+    mk("C", false, false),
+  ];
+  assertEquals(
+    hardestDay(trio as typeof members, 1)?.includes("day 1, 34%"),
+    true,
   );
 });

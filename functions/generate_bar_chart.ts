@@ -31,8 +31,7 @@ export default SlackFunction(
   ({ inputs }) => { // Provide any context properties, like `inputs`, `env`, or `token`
     const { stats } = inputs;
     const total_days = stats.daily_gold_stars.length;
-    const days_released = stats.days_released ?? total_days;
-    const year = stats.year ?? new Date().getFullYear();
+    const { days_released, year } = stats;
 
     // Colors taken from adventofcode.com stylesheet
     const chart_background = "#0f0f23";

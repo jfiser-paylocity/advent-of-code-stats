@@ -28,6 +28,10 @@ export const LeaderboardStatsCustomType = DefineType({
     days_released: {
       type: Schema.types.number,
     },
+    /** Puzzle day whose 24 hour window was open at fetch time, if any. */
+    today: {
+      type: Schema.types.number,
+    },
     year: {
       type: Schema.types.number,
     },
@@ -38,5 +42,11 @@ export const LeaderboardStatsCustomType = DefineType({
       },
     },
   },
-  required: ["progress", "daily_silver_stars", "daily_gold_stars"],
+  required: [
+    "progress",
+    "daily_silver_stars",
+    "daily_gold_stars",
+    "days_released",
+    "year",
+  ],
 });

@@ -1,7 +1,7 @@
 import { Trigger } from "deno-slack-api/types.ts";
 import { TriggerContextData, TriggerTypes } from "deno-slack-api/mod.ts";
 import { PostStatisticsWorkflow } from "../workflows/post_statistics.ts";
-import "@std/dotenv/load";
+import { requireEnv } from "./require_env.ts";
 
 const StarProgressLinkTrigger: Trigger<
   typeof PostStatisticsWorkflow.definition
@@ -14,7 +14,7 @@ const StarProgressLinkTrigger: Trigger<
       value: TriggerContextData.Shortcut.channel_id,
     },
     leaderboard_1: {
-      value: Deno.env.get("ADVENT_OF_CODE_STATS_LEADERBOARD_ID_1")!,
+      value: requireEnv("ADVENT_OF_CODE_STATS_LEADERBOARD_ID_1"),
     },
   },
 };

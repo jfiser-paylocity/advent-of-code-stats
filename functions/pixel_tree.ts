@@ -1,4 +1,4 @@
-import { publishTimestamp } from "./fun_facts.ts";
+import { DAY_SECONDS, EVENT_DAYS, publishTimestamp } from "./aoc_time.ts";
 
 /**
  * Pixel-art advent tree. One ornament per solved star, one snowflake per
@@ -132,6 +132,8 @@ export type TreeScene = {
   stars: Star[];
   flakes: { x: number; y: number; color: RGB; joinDay?: number }[];
   total: number;
+  /** Members without a snowflake because the sky is full. */
+  droppedFlakes: number;
 };
 
 /** Layout of the tree area: pixels that are green and pixels for ornaments. */
@@ -154,7 +156,7 @@ function treeCells() {
 
 export function buildScene(
   members: PixelTreeMember[],
-  { year, days = 12 }: PixelTreeOptions,
+  { year, days = EVENT_DAYS }: PixelTreeOptions,
 ): TreeScene & { positions: [number, number][] } {
   const { cx, cells, shade } = treeCells();
   const ranked = members
@@ -241,7 +243,7 @@ export function buildScene(
     const first = times.length ? Math.min(...times) : undefined;
     const joinDay = first == null ? undefined : Math.min(
       days,
-      Math.max(1, Math.floor((first - published1) / 86400) + 1),
+      Math.max(1, Math.floor((first - published1) / DAY_SECONDS) + 1),
     );
     const base = colorOf.get(m)!;
     flakes.push({
@@ -256,6 +258,7 @@ export function buildScene(
     stars,
     flakes,
     total: stars.length,
+    droppedFlakes: members.length - flakes.length,
     positions: inner.slice(0, count),
   };
 }
@@ -263,7 +266,7 @@ export function buildScene(
 export function drawTree(
   members: PixelTreeMember[],
   options: PixelTreeOptions,
-): { canvas: Canvas; shown: number } {
+): TreeDrawing & { canvas: Canvas } {
   const { upto } = options;
   const scene = buildScene(members, options);
   const { cx, cells, shade } = treeCells();
@@ -304,9 +307,15 @@ export function drawTree(
   }
 
   let shown = 0;
+  let hiddenStars = 0;
   scene.stars.forEach((s, i) => {
+    if (upto != null && s.day > upto) return;
     const pos = scene.positions[i];
-    if (!pos || (upto != null && s.day > upto)) return;
+    if (!pos) {
+      // The tree has no free cell left for this ornament.
+      hiddenStars++;
+      return;
+    }
     shown++;
     c.px(pos[0], pos[1], s.color);
     if (s.part === 2) c.px(pos[0], pos[1] - 1, dim(s.color, 0.6));
@@ -314,11 +323,26 @@ export function drawTree(
 
   if (upto != null) {
     c.text(2, 71, `DAY ${upto}`, [150, 30, 30]);
-    const label = `${shown}`;
+    // Real star count, even when not every star fits on the tree.
+    const label = `${shown + hiddenStars}`;
     c.text(W - 2 - 4 * label.length, 71, label, [20, 30, 70]);
   }
-  return { canvas: c, shown };
+  return {
+    canvas: c,
+    shown,
+    hiddenStars,
+    droppedFlakes: scene.droppedFlakes,
+  };
 }
+
+export type TreeDrawing = {
+  /** Ornaments drawn. */
+  shown: number;
+  /** Stars that did not fit on the tree. */
+  hiddenStars: number;
+  /** Members that did not get a snowflake. */
+  droppedFlakes: number;
+};
 
 const CRC_TABLE = (() => {
   const t = new Uint32Array(256);
@@ -396,7 +420,7 @@ export async function encodePng(canvas: Canvas, scale: number) {
 export async function renderPixelTree(
   members: PixelTreeMember[],
   options: PixelTreeOptions,
-): Promise<{ png: Uint8Array; shown: number }> {
-  const { canvas, shown } = drawTree(members, options);
-  return { png: await encodePng(canvas, options.scale ?? 10), shown };
+): Promise<TreeDrawing & { png: Uint8Array }> {
+  const { canvas, ...drawing } = drawTree(members, options);
+  return { png: await encodePng(canvas, options.scale ?? 10), ...drawing };
 }

@@ -33,14 +33,13 @@ export default SlackFunction(
   // Pass along the function definition from earlier in the source file
   PostStatisticsFunctionDefinition,
   async ({ inputs, client }) => { // Provide any context properties, like `inputs`, `env`, or `token`
-    const day_today = (new Date()).getDate();
-    const day_today_capped = Math.min(12, day_today);
+    const { today, days_released, year } = inputs.stats;
     const text = [
       "Total star progress of the team",
       `is *${inputs.stats.progress}%*.`,
     ];
-    if (day_today == day_today_capped) {
-      text.splice(1, 0, `for day ${day_today_capped}`);
+    if (today) {
+      text.splice(1, 0, `for day ${today}`);
       if (inputs.stats.first_solution_today_by) {
         text.push(
           `First participant to complete all tasks today was *${inputs.stats.first_solution_today_by}*, congrats!`,
@@ -75,68 +74,89 @@ export default SlackFunction(
       let treeBlock: Record<string, unknown> | undefined;
       if (inputs.members?.length) {
         try {
-          const day = Math.min(
-            12,
-            inputs.stats.days_released ?? day_today_capped,
-          );
           const tree = await uploadPixelTree(
             client,
             inputs.members,
-            inputs.stats.year ?? new Date().getFullYear(),
-            day,
+            year,
+            days_released,
           );
           if (tree.fileId) {
+            const complete = !tree.hiddenStars && !tree.droppedFlakes;
+            if (!complete) {
+              console.warn(
+                `Pixel tree is full: ${tree.hiddenStars} stars and ${tree.droppedFlakes} participants not drawn`,
+              );
+            }
             treeBlock = {
               "type": "image",
               "slack_file": { "id": tree.fileId },
-              "alt_text":
-                "pixel advent tree: one ornament per star, one snowflake per participant",
+              "alt_text": complete
+                ? "pixel advent tree: one ornament per star, one snowflake per participant"
+                : "pixel advent tree: ornaments for stars, snowflakes for participants (too many to show all)",
             };
           } else {
             console.warn(tree.error);
           }
         } catch (err) {
-          error = `Failed to create pixel tree due to ${err}`;
+          // Not fatal: the statistics are posted without the tree.
+          console.warn(`Failed to create pixel tree due to ${err}`);
         }
       }
 
       // 2. Post the statistics message to the channel. A freshly uploaded file
       // may not be usable in a block immediately, so retry a couple of times.
+      // Errors that have nothing to do with the tree are not retried.
       const post = (withTree: boolean) =>
         client.chat.postMessage({
           channel: inputs.channel,
-          thread_ts: "",
           blocks: withTree && treeBlock ? [...blocks, treeBlock] : blocks,
           unfurl_links: false,
         });
+      const treeMayHelp = (resp: { ok: boolean; error?: string }) =>
+        !resp.ok && !!treeBlock && !NON_RETRYABLE_ERRORS.has(resp.error ?? "");
+      // Slack puts the exact block problem in response_metadata.messages.
+      const detail = (resp: typeof postResp) =>
+        `${resp.error}: ${JSON.stringify(resp.response_metadata?.messages)}`;
       let postResp = await post(!!treeBlock);
-      for (let retry = 0; !postResp.ok && treeBlock && retry < 2; retry++) {
-        // Slack puts the exact block problem in response_metadata.messages.
-        console.warn(
-          `Pixel tree embed failed (${postResp.error}): ${
-            JSON.stringify(postResp.response_metadata?.messages)
-          }`,
+      let retries = 0;
+      while (treeMayHelp(postResp) && retries < TREE_RETRIES) {
+        retries++;
+        // Expected right after upload, so this is not a warning yet.
+        console.log(
+          `Pixel tree not ready (${
+            detail(postResp)
+          }), retry ${retries}/${TREE_RETRIES} in ${TREE_RETRY_DELAY_MS} ms`,
         );
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+        await new Promise((resolve) =>
+          setTimeout(resolve, TREE_RETRY_DELAY_MS)
+        );
         postResp = await post(true);
       }
-      if (!postResp.ok && treeBlock) {
+      if (treeMayHelp(postResp)) {
         // Still failing: post without the tree. Not fatal for the workflow.
         console.warn(
-          `Posting without pixel tree (${postResp.error}): ${
-            JSON.stringify(postResp.response_metadata?.messages)
-          }`,
+          `Pixel tree still not accepted after ${retries} retries (${
+            detail(postResp)
+          }), posting without it`,
         );
         postResp = await post(false);
+      } else if (postResp.ok && treeBlock) {
+        console.log(
+          retries
+            ? `Pixel tree embedded after ${retries} ${
+              retries === 1 ? "retry" : "retries"
+            }`
+            : "Pixel tree embedded",
+        );
       }
 
       if (!postResp.ok) {
-        const summaryTS = postResp ? postResp.ts : "n/a";
         error =
-          `Error posting summary: ${summaryTS} to channel: ${inputs.channel}. Error detail: ${postResp.error}`;
+          `Error posting summary to channel: ${inputs.channel}. Error detail: ${postResp.error}`;
       } else if (inputs.stats.fun_facts?.length) {
         // 3. Post fun facts in the thread of the statistics message.
-        // A failure here must not hide the already posted main message.
+        // The main message is already posted, so a failure here is only
+        // logged and does not fail the workflow.
         try {
           const threadResp = await client.chat.postMessage({
             channel: inputs.channel,
@@ -145,20 +165,44 @@ export default SlackFunction(
             unfurl_links: false,
           });
           if (!threadResp.ok) {
-            error =
-              `Error posting fun facts to thread ${postResp.ts}. Error detail: ${threadResp.error}`;
+            console.warn(
+              `Error posting fun facts to thread ${postResp.ts}. Error detail: ${threadResp.error}`,
+            );
           }
         } catch (err) {
-          error = `Failed to post fun facts to thread due to ${err}`;
+          console.warn(`Failed to post fun facts to thread due to ${err}`);
         }
       }
     } catch (err) {
-      error = `Failed to call AoC API due to ${err}`;
+      error = `Failed to post statistics due to ${err}`;
     }
 
     return { error, outputs: {} };
   },
 );
+
+/**
+ * chat.postMessage errors that a retry or dropping the tree image cannot fix
+ * (channel access, auth, rate limits). Anything else may be the tree block.
+ */
+const NON_RETRYABLE_ERRORS = new Set([
+  "channel_not_found",
+  "not_in_channel",
+  "is_archived",
+  "restricted_action",
+  "invalid_auth",
+  "not_authed",
+  "token_revoked",
+  "account_inactive",
+  "missing_scope",
+  "ratelimited",
+]);
+
+const UPLOAD_TIMEOUT_MS = 15_000;
+
+/** A freshly uploaded file is often rejected for a moment ("invalid slack file"). */
+const TREE_RETRIES = 2;
+const TREE_RETRY_DELAY_MS = 2000;
 
 // deno-lint-ignore no-explicit-any
 type SlackClient = any;
@@ -173,8 +217,18 @@ async function uploadPixelTree(
   members: Parameters<typeof renderPixelTree>[0],
   year: number,
   day: number,
-): Promise<{ fileId?: string; error?: string }> {
-  const { png } = await renderPixelTree(members, { year, upto: day });
+): Promise<
+  {
+    fileId?: string;
+    error?: string;
+    hiddenStars?: number;
+    droppedFlakes?: number;
+  }
+> {
+  const { png, hiddenStars, droppedFlakes } = await renderPixelTree(members, {
+    year,
+    upto: day,
+  });
 
   // Slack's external upload flow: get URL, send bytes, complete.
   const start = await client.files.getUploadURLExternal({
@@ -187,6 +241,7 @@ async function uploadPixelTree(
   const upload = await fetch(start.upload_url, {
     method: "POST",
     body: png.buffer as ArrayBuffer,
+    signal: AbortSignal.timeout(UPLOAD_TIMEOUT_MS),
   });
   if (!upload.ok) {
     return { error: `Error uploading tree image: ${upload.status}` };
@@ -195,5 +250,5 @@ async function uploadPixelTree(
     files: [{ id: start.file_id, title: `Advent tree, day ${day}` }],
   });
   if (!done.ok) return { error: `Error finishing tree upload: ${done.error}` };
-  return { fileId: start.file_id };
+  return { fileId: start.file_id, hiddenStars, droppedFlakes };
 }

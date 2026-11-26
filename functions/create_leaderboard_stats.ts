@@ -1,7 +1,8 @@
-import { DefineFunction, SlackFunction } from "deno-slack-sdk/mod.ts";
+import { DefineFunction, Schema, SlackFunction } from "deno-slack-sdk/mod.ts";
 import { LeaderboardMemberArrayType } from "../types/leaderboard.ts";
 import { LeaderboardStatsCustomType } from "../types/leaderboard_stats.ts";
-import { buildFunFacts } from "./fun_facts.ts";
+import { buildFunFacts, displayName } from "./fun_facts.ts";
+import { EVENT_DAYS, eventClock } from "./aoc_time.ts";
 
 export const CreateLeaderboardStatsFunctionDefinition = DefineFunction({
   callback_id: "create_leaderboard_stats",
@@ -13,8 +14,12 @@ export const CreateLeaderboardStatsFunctionDefinition = DefineFunction({
         type: LeaderboardMemberArrayType,
         description: "Leaderboard data",
       },
+      fetched_at: {
+        type: Schema.types.number,
+        description: "Time the leaderboard was fetched, in ms",
+      },
     },
-    required: ["all_members"],
+    required: ["all_members", "fetched_at"],
   },
   output_parameters: {
     properties: {
@@ -30,88 +35,67 @@ export const CreateLeaderboardStatsFunctionDefinition = DefineFunction({
 export default SlackFunction(
   // Pass along the function definition from earlier in the source file
   CreateLeaderboardStatsFunctionDefinition,
-  ({ inputs: { all_members } }) => { // Provide any context properties, like `inputs`, `env`, or `token`
-    // Implement your function
+  ({ inputs: { all_members, fetched_at } }) => {
+    // Same clock as the fetch step, so both agree on year and day.
+    const { year, released, today } = eventClock(fetched_at);
     let completed_tasks_total = 0;
-    let first_person_ts = (new Date()).getTime();
+    let first_person_ts = Infinity;
     let first_person_name;
-    const daily_silver_stars = [
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-    ];
-    const daily_gold_stars = [
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-    ];
+    const daily_silver_stars: number[] = Array(EVENT_DAYS).fill(0);
+    const daily_gold_stars: number[] = Array(EVENT_DAYS).fill(0);
     const total_participants = all_members.length;
-    const day_today = Math.min(daily_gold_stars.length, (new Date()).getDate());
 
-    // Use `let i` because i mutates (`i++`).
     for (const member of all_members) {
       completed_tasks_total += member.stars;
       for (const completion_level of member.completion_day_level) {
+        // Out of range days would write NaN and holes into the daily arrays.
+        if (completion_level.day < 1 || completion_level.day > EVENT_DAYS) {
+          console.warn(`Ignoring unexpected day ${completion_level.day}`);
+          continue;
+        }
         if (completion_level.star_1_timestamp) {
           daily_silver_stars[completion_level.day - 1] += 1;
         }
         if (completion_level.star_2_timestamp) {
           daily_gold_stars[completion_level.day - 1] += 1;
           if (
-            day_today != daily_gold_stars.length &&
-            completion_level.day == day_today &&
+            completion_level.day === today &&
             completion_level.star_2_timestamp < first_person_ts
           ) {
             first_person_ts = completion_level.star_2_timestamp;
-            first_person_name = member.name || "Anonymous";
+            first_person_name = displayName(member);
           }
         }
       }
     }
 
-    const available_tasks = 2 * day_today * total_participants;
-    const total_progress_percentage =
-      ((completed_tasks_total / available_tasks) * 100).toFixed(2);
+    const available_tasks = 2 * released * total_participants;
+    // Empty leaderboard: report 0 % instead of NaN.
+    const percentOf = (value: number, total: number) =>
+      total > 0 ? (value / total) * 100 : 0;
     const total_progress_percentage_capped = Math.min(
-      +total_progress_percentage,
+      Math.round(percentOf(completed_tasks_total, available_tasks) * 100) /
+        100,
       100,
     );
 
-    const year = new Date().getFullYear();
     const data = {
       "progress": total_progress_percentage_capped,
       "total_participants": total_participants,
-      "days_released": day_today,
+      "days_released": released,
+      "today": today,
       "year": year,
       "first_solution_today_by": first_person_name,
       "daily_silver_stars": daily_silver_stars.map((value) =>
-        ((value / total_participants) * 100).toFixed()
+        Math.round(percentOf(value, total_participants))
       ),
       "daily_gold_stars": daily_gold_stars.map((value) =>
-        ((value / total_participants) * 100).toFixed()
+        Math.round(percentOf(value, total_participants))
       ),
       "fun_facts": buildFunFacts(all_members, {
-        day: day_today,
+        day: released,
         year,
-        now: Date.now(),
+        now: fetched_at,
       }),
     };
 

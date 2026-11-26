@@ -1,5 +1,6 @@
 // Pure helpers that turn leaderboard data into short "fun fact" lines.
 // No Slack imports so they can be unit tested directly.
+import { DAY_SECONDS, publishTimestamp } from "./aoc_time.ts";
 
 export interface FunFactMember {
   name?: string;
@@ -21,16 +22,8 @@ export interface FunFactOptions {
   now: number;
 }
 
-const HOUR_SECONDS = 3600;
-const DAY_SECONDS = 24 * HOUR_SECONDS;
-
-const displayName = (member: FunFactMember) => member.name || "Anonymous";
-
-/** Puzzles unlock at 00:00 EST, which is 05:00 UTC in December. Returns seconds. */
-export function publishTimestamp(year: number, day: number): number {
-  // `Date.UTC` months are 0-indexed, so 11 is December.
-  return Date.UTC(year, 11, day, 5) / 1000;
-}
+export const displayName = (member: { name?: string }) =>
+  member.name || "Anonymous";
 
 export function formatDuration(totalSeconds: number): string {
   const seconds = Math.max(0, Math.round(totalSeconds));
@@ -273,8 +266,11 @@ export function hardestDay(
   if (!best || best.gap <= 0) {
     return undefined;
   }
-  const percent = Math.round((best.gap / members.length) * 100);
-  return `🧱 Toughest part 2 so far: day ${best.day}, ${percent}% of participants didn't complete it (${best.silver} ⭐ → ${best.gold} ⭐⭐).`;
+  // Round each share first, then subtract, so the figure matches the chart.
+  const silverPct = Math.round((best.silver / members.length) * 100);
+  const goldPct = Math.round((best.gold / members.length) * 100);
+  const percent = silverPct - goldPct;
+  return `🧱 Toughest part 2 so far: day ${best.day}, ${percent}% of participants solved part 1 but not part 2 (${best.silver} ⭐ → ${best.gold} ⭐⭐).`;
 }
 
 export function topThree(members: FunFactMember[]): string | undefined {

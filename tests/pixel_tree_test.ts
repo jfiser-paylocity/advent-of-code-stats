@@ -1,5 +1,5 @@
 import { drawTree, renderPixelTree } from "../functions/pixel_tree.ts";
-import { publishTimestamp } from "../functions/fun_facts.ts";
+import { publishTimestamp } from "../functions/aoc_time.ts";
 
 function assert(cond: boolean, msg: string) {
   if (!cond) throw new Error(msg);
@@ -44,6 +44,22 @@ Deno.test("earlier frames are a subset of later frames", () => {
     // Only labels may differ between frames (bottom rows).
     if (changed2 && i / 3 < 61 * 70) assert(same, `pixel ${i / 3} moved`);
   }
+});
+
+Deno.test("reports what does not fit on the tree", () => {
+  const small = drawTree(members, { year: YEAR });
+  assert(small.hiddenStars === 0, "small board hides no stars");
+  assert(small.droppedFlakes === 0, "small board drops no flakes");
+
+  const days = Array.from({ length: 12 }, (_, i) => i + 1);
+  const crowd = Array.from({ length: 100 }, (_, i) => member(i + 1, days));
+  const big = drawTree(crowd, { year: YEAR, upto: 12 });
+  assert(
+    big.shown + big.hiddenStars === 100 * 24,
+    `every star is either shown or hidden, got ${big.shown}+${big.hiddenStars}`,
+  );
+  assert(big.hiddenStars > 0, "100 members overflow the tree");
+  assert(big.droppedFlakes > 0, "100 members overflow the sky");
 });
 
 Deno.test("a new member adds a flake without moving existing ones", () => {
