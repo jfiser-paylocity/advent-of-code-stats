@@ -1,17 +1,9 @@
 // Pure helpers that turn leaderboard data into short "fun fact" lines.
 // No Slack imports so they can be unit tested directly.
 import { DAY_SECONDS, publishTimestamp } from "./aoc_time.ts";
+import { displayName, type Member, sharePercent } from "./members.ts";
 
-export interface FunFactMember {
-  name?: string;
-  stars: number;
-  local_score?: number;
-  completion_day_level: {
-    day: number;
-    star_1_timestamp?: number;
-    star_2_timestamp?: number;
-  }[];
-}
+type CompletionLevel = Member["completion_day_level"][number];
 
 export interface FunFactOptions {
   /** Current puzzle day (1-based). */
@@ -21,9 +13,6 @@ export interface FunFactOptions {
   /** Current time in milliseconds. */
   now: number;
 }
-
-export const displayName = (member: { name?: string }) =>
-  member.name || "Anonymous";
 
 export function formatDuration(totalSeconds: number): string {
   const seconds = Math.max(0, Math.round(totalSeconds));
@@ -40,48 +29,70 @@ export function formatDuration(totalSeconds: number): string {
 }
 
 interface Solve {
-  member: FunFactMember;
+  member: Member;
   day: number;
   seconds: number;
   /** When the star was earned, in seconds. */
   finishedAt: number;
 }
 
-function part1Solves(members: FunFactMember[], year: number): Solve[] {
-  const solves: Solve[] = [];
-  for (const member of members) {
-    for (const level of member.completion_day_level) {
-      if (level.star_1_timestamp !== undefined) {
-        solves.push({
+/** One solve per completion level for which `timing` returns a start and end. */
+function collectSolves(
+  members: Member[],
+  timing: (level: CompletionLevel) => [number, number] | undefined,
+): Solve[] {
+  return members.flatMap((member) =>
+    member.completion_day_level.flatMap((level) => {
+      const span = timing(level);
+      return span
+        ? [{
           member,
           day: level.day,
-          seconds: level.star_1_timestamp - publishTimestamp(year, level.day),
-          finishedAt: level.star_1_timestamp,
-        });
-      }
-    }
-  }
-  return solves;
+          seconds: span[1] - span[0],
+          finishedAt: span[1],
+        }]
+        : [];
+    })
+  );
 }
 
-function part2Solves(members: FunFactMember[]): Solve[] {
-  const solves: Solve[] = [];
-  for (const member of members) {
-    for (const level of member.completion_day_level) {
-      if (
-        level.star_1_timestamp !== undefined &&
-        level.star_2_timestamp !== undefined
-      ) {
-        solves.push({
-          member,
-          day: level.day,
-          seconds: level.star_2_timestamp - level.star_1_timestamp,
-          finishedAt: level.star_2_timestamp,
-        });
-      }
-    }
+/** Part 1: from puzzle unlock to the first star. */
+const part1Solves = (members: Member[], year: number) =>
+  collectSolves(
+    members,
+    (level) =>
+      level.star_1_timestamp !== undefined
+        ? [publishTimestamp(year, level.day), level.star_1_timestamp]
+        : undefined,
+  );
+
+/** Part 2: from the first star to the second. */
+const part2Solves = (members: Member[]) =>
+  collectSolves(members, (level) =>
+    level.star_1_timestamp !== undefined &&
+      level.star_2_timestamp !== undefined
+      ? [level.star_1_timestamp, level.star_2_timestamp]
+      : undefined);
+
+/** "*A*, *B* and *C*", or "*A*, *B*, *C* and 4 more" past `limit` names. */
+function joinNames(names: string[], limit: number): string {
+  if (names.length > limit) {
+    return `${names.slice(0, limit).join(", ")} and ${
+      names.length - limit
+    } more`;
   }
-  return solves;
+  if (names.length > 1) {
+    return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+  }
+  return names[0];
+}
+
+function recordLine(prefix: string, best: Solve | undefined) {
+  return best
+    ? `${prefix}: *${displayName(best.member)}*, ${
+      formatDuration(best.seconds)
+    } (day ${best.day}).`
+    : undefined;
 }
 
 function fastest(solves: Solve[]): Solve | undefined {
@@ -95,7 +106,7 @@ function fastest(solves: Solve[]): Solve | undefined {
 }
 
 export function biggestGain(
-  members: FunFactMember[],
+  members: Member[],
   now: number,
 ): string | undefined {
   const since = now / 1000 - DAY_SECONDS;
@@ -143,7 +154,7 @@ export function biggestGain(
  * Once the puzzle's 24 hour window is over (or before it opens), there is no "today".
  */
 export function fastestJumpToday(
-  members: FunFactMember[],
+  members: Member[],
   { day, year, now }: FunFactOptions,
 ): string | undefined {
   const since = publishTimestamp(year, day);
@@ -165,31 +176,25 @@ export function fastestJumpToday(
 }
 
 export function fastestPart1Record(
-  members: FunFactMember[],
+  members: Member[],
   year: number,
 ): string | undefined {
-  const best = fastest(part1Solves(members, year));
-  if (!best) {
-    return undefined;
-  }
-  return `🥇 Fastest part 1 this year: *${displayName(best.member)}*, ${
-    formatDuration(best.seconds)
-  } (day ${best.day}).`;
+  return recordLine(
+    "🥇 Fastest part 1 this year",
+    fastest(part1Solves(members, year)),
+  );
 }
 
 export function fastestPart2Record(
-  members: FunFactMember[],
+  members: Member[],
 ): string | undefined {
-  const best = fastest(part2Solves(members));
-  if (!best) {
-    return undefined;
-  }
-  return `🥈 Fastest part 2 this year: *${displayName(best.member)}*, ${
-    formatDuration(best.seconds)
-  } (day ${best.day}).`;
+  return recordLine(
+    "🥈 Fastest part 2 this year",
+    fastest(part2Solves(members)),
+  );
 }
 
-function currentStreak(member: FunFactMember, day: number): number {
+function currentStreak(member: Member, day: number): number {
   const completed = new Set(
     member.completion_day_level
       .filter((l) =>
@@ -208,11 +213,11 @@ function currentStreak(member: FunFactMember, day: number): number {
 }
 
 export function streakLeaders(
-  members: FunFactMember[],
+  members: Member[],
   day: number,
 ): string | undefined {
   let max = 0;
-  let leaders: FunFactMember[] = [];
+  let leaders: Member[] = [];
   for (const member of members) {
     const streak = currentStreak(member, day);
     if (streak > max) {
@@ -226,19 +231,13 @@ export function streakLeaders(
     return undefined;
   }
   const names = leaders.map((m) => `*${displayName(m)}*`).sort();
-  let shown: string;
-  if (names.length > 3) {
-    shown = `${names.slice(0, 3).join(", ")} and ${names.length - 3} more`;
-  } else if (names.length > 1) {
-    shown = `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
-  } else {
-    shown = names[0];
-  }
-  return `🔥 Longest streak: ${shown}, ${max} days with both stars.`;
+  return `🔥 Longest streak: ${
+    joinNames(names, 3)
+  }, ${max} days with both stars.`;
 }
 
 export function hardestDay(
-  members: FunFactMember[],
+  members: Member[],
   day: number,
 ): string | undefined {
   if (members.length === 0) {
@@ -267,13 +266,12 @@ export function hardestDay(
     return undefined;
   }
   // Round each share first, then subtract, so the figure matches the chart.
-  const silverPct = Math.round((best.silver / members.length) * 100);
-  const goldPct = Math.round((best.gold / members.length) * 100);
-  const percent = silverPct - goldPct;
+  const percent = sharePercent(best.silver, members.length) -
+    sharePercent(best.gold, members.length);
   return `🧱 Toughest part 2 so far: day ${best.day}, ${percent}% of participants solved part 1 but not part 2 (${best.silver} ⭐ → ${best.gold} ⭐⭐).`;
 }
 
-export function topThree(members: FunFactMember[]): string | undefined {
+export function topThree(members: Member[]): string | undefined {
   const ranked = members
     .map((m) => ({ name: displayName(m), score: m.local_score ?? m.stars }))
     .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
@@ -287,7 +285,7 @@ export function topThree(members: FunFactMember[]): string | undefined {
   }`;
 }
 
-export function nonParticipants(members: FunFactMember[]): string | undefined {
+export function nonParticipants(members: Member[]): string | undefined {
   const names = members
     .filter((m) => m.stars === 0 && m.completion_day_level.length === 0)
     .map((m) => `*${displayName(m)}*`)
@@ -295,16 +293,11 @@ export function nonParticipants(members: FunFactMember[]): string | undefined {
   if (names.length === 0) {
     return undefined;
   }
-  const shown = names.length > 5
-    ? `${names.slice(0, 5).join(", ")} and ${names.length - 5} more`
-    : names.length > 1
-    ? `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`
-    : names[0];
-  return `👻 No stars yet this year: ${shown}.`;
+  return `👻 No stars yet this year: ${joinNames(names, 5)}.`;
 }
 
 export function buildFunFacts(
-  members: FunFactMember[],
+  members: Member[],
   { day, year, now }: FunFactOptions,
 ): string[] {
   return [

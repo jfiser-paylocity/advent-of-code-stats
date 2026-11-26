@@ -5,13 +5,13 @@ import {
   fastestPart1Record,
   fastestPart2Record,
   formatDuration,
-  FunFactMember,
   hardestDay,
   nonParticipants,
   streakLeaders,
   topThree,
 } from "../functions/fun_facts.ts";
 import { publishTimestamp } from "../functions/aoc_time.ts";
+import type { Member } from "../functions/members.ts";
 
 function assertEquals<T>(actual: T, expected: T) {
   const a = JSON.stringify(actual);
@@ -24,7 +24,7 @@ function assertEquals<T>(actual: T, expected: T) {
 const YEAR = 2025;
 const publish = (day: number) => publishTimestamp(YEAR, day);
 
-const alice: FunFactMember = {
+const alice: Member = {
   name: "Alice",
   stars: 4,
   local_score: 50,
@@ -41,7 +41,7 @@ const alice: FunFactMember = {
     },
   ],
 };
-const bob: FunFactMember = {
+const bob: Member = {
   stars: 3,
   local_score: 70,
   completion_day_level: [
@@ -149,7 +149,7 @@ Deno.test("buildFunFacts skips facts without data", () => {
 });
 
 Deno.test("nonParticipants", () => {
-  const ghost: FunFactMember = {
+  const ghost: Member = {
     name: "Ghost",
     stars: 0,
     completion_day_level: [],

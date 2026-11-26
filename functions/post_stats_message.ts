@@ -2,6 +2,7 @@ import { DefineFunction, Schema, SlackFunction } from "deno-slack-sdk/mod.ts";
 import { LeaderboardStatsCustomType } from "../types/leaderboard_stats.ts";
 import { LeaderboardMemberArrayType } from "../types/leaderboard.ts";
 import { renderPixelTree } from "./pixel_tree.ts";
+import type { Member } from "./members.ts";
 
 export const PostStatisticsFunctionDefinition = DefineFunction({
   callback_id: "post_stats_message",
@@ -214,7 +215,7 @@ type SlackClient = any;
  */
 async function uploadPixelTree(
   client: SlackClient,
-  members: Parameters<typeof renderPixelTree>[0],
+  members: Member[],
   year: number,
   day: number,
 ): Promise<

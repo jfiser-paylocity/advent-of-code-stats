@@ -1,21 +1,11 @@
 import { DAY_SECONDS, EVENT_DAYS, publishTimestamp } from "./aoc_time.ts";
+import type { Member } from "./members.ts";
 
 /**
  * Pixel-art advent tree. One ornament per solved star, one snowflake per
  * leaderboard member. Pure TypeScript, no dependencies: renders to a small RGB
  * canvas, scales it up without smoothing and encodes a PNG.
  */
-
-export type PixelTreeMember = {
-  id?: number;
-  name?: string;
-  stars: number;
-  completion_day_level: {
-    day: number;
-    star_1_timestamp?: number;
-    star_2_timestamp?: number;
-  }[];
-};
 
 export type PixelTreeOptions = {
   year: number;
@@ -155,14 +145,14 @@ function treeCells() {
 }
 
 export function buildScene(
-  members: PixelTreeMember[],
+  members: Member[],
   { year, days = EVENT_DAYS }: PixelTreeOptions,
 ): TreeScene & { positions: [number, number][] } {
   const { cx, cells, shade } = treeCells();
   const ranked = members
     .map((m, i) => ({ m, i }))
     .sort((a, b) => b.m.stars - a.m.stars || a.i - b.i);
-  const colorOf = new Map<PixelTreeMember, RGB>();
+  const colorOf = new Map<Member, RGB>();
   ranked.forEach(({ m }, i) => colorOf.set(m, PALETTE[i % PALETTE.length]));
 
   // Stars sorted by (day, timestamp): the stars of days <= N are always a
@@ -170,21 +160,11 @@ export function buildScene(
   const stars: Star[] = [];
   for (const m of members) {
     for (const level of m.completion_day_level) {
-      if (level.star_1_timestamp != null) {
-        stars.push({
-          day: level.day,
-          part: 1,
-          ts: level.star_1_timestamp,
-          color: colorOf.get(m)!,
-        });
-      }
-      if (level.star_2_timestamp != null) {
-        stars.push({
-          day: level.day,
-          part: 2,
-          ts: level.star_2_timestamp,
-          color: colorOf.get(m)!,
-        });
+      for (const part of [1, 2] as const) {
+        const ts = level[`star_${part}_timestamp`];
+        if (ts != null) {
+          stars.push({ day: level.day, part, ts, color: colorOf.get(m)! });
+        }
       }
     }
   }
@@ -264,7 +244,7 @@ export function buildScene(
 }
 
 export function drawTree(
-  members: PixelTreeMember[],
+  members: Member[],
   options: PixelTreeOptions,
 ): TreeDrawing & { canvas: Canvas } {
   const { upto } = options;
@@ -418,7 +398,7 @@ export async function encodePng(canvas: Canvas, scale: number) {
 
 /** Render the tree as a PNG. `upto` limits it to the state after that day. */
 export async function renderPixelTree(
-  members: PixelTreeMember[],
+  members: Member[],
   options: PixelTreeOptions,
 ): Promise<TreeDrawing & { png: Uint8Array }> {
   const { canvas, ...drawing } = drawTree(members, options);

@@ -1,7 +1,8 @@
 import { DefineFunction, Schema, SlackFunction } from "deno-slack-sdk/mod.ts";
 import { LeaderboardMemberArrayType } from "../types/leaderboard.ts";
 import { LeaderboardStatsCustomType } from "../types/leaderboard_stats.ts";
-import { buildFunFacts, displayName } from "./fun_facts.ts";
+import { buildFunFacts } from "./fun_facts.ts";
+import { displayName, sharePercent } from "./members.ts";
 import { EVENT_DAYS, eventClock } from "./aoc_time.ts";
 
 export const CreateLeaderboardStatsFunctionDefinition = DefineFunction({
@@ -70,14 +71,13 @@ export default SlackFunction(
     }
 
     const available_tasks = 2 * released * total_participants;
-    // Empty leaderboard: report 0 % instead of NaN.
-    const percentOf = (value: number, total: number) =>
-      total > 0 ? (value / total) * 100 : 0;
-    const total_progress_percentage_capped = Math.min(
-      Math.round(percentOf(completed_tasks_total, available_tasks) * 100) /
+    // Empty leaderboard: report 0 % instead of NaN. Two decimals, capped.
+    const total_progress_percentage_capped = available_tasks > 0
+      ? Math.min(
+        Math.round((completed_tasks_total / available_tasks) * 100 * 100) / 100,
         100,
-      100,
-    );
+      )
+      : 0;
 
     const data = {
       "progress": total_progress_percentage_capped,
@@ -87,10 +87,10 @@ export default SlackFunction(
       "year": year,
       "first_solution_today_by": first_person_name,
       "daily_silver_stars": daily_silver_stars.map((value) =>
-        Math.round(percentOf(value, total_participants))
+        sharePercent(value, total_participants)
       ),
       "daily_gold_stars": daily_gold_stars.map((value) =>
-        Math.round(percentOf(value, total_participants))
+        sharePercent(value, total_participants)
       ),
       "fun_facts": buildFunFacts(all_members, {
         day: released,

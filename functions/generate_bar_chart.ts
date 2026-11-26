@@ -56,19 +56,19 @@ export default SlackFunction(
         : "") +
       `${days_released} of ${total_days} days released · % of participants`;
 
-    const dataset_style =
-      "borderWidth:0,barPercentage:0.85,categoryPercentage:0.85";
+    const bar_dataset = (label: string, values: number[], color: string) =>
+      `{label:'${label}',data:${
+        JSON.stringify(to_series(values))
+      },backgroundColor:'${color}',borderWidth:0,barPercentage:0.85,categoryPercentage:0.85,datalabels:{color:'${color}'}}`;
     const chart_config = `{
       type:'bar',
       data:{
         labels:${JSON.stringify(labels)},
         datasets:[
-          {label:'Part 1 (silver)',data:${
-      JSON.stringify(to_series(stats.daily_silver_stars))
-    },backgroundColor:'${silver_color}',${dataset_style},datalabels:{color:'${silver_color}'}},
-          {label:'Part 2 (gold)',data:${
-      JSON.stringify(to_series(stats.daily_gold_stars))
-    },backgroundColor:'${gold_color}',${dataset_style},datalabels:{color:'${gold_color}'}},
+          ${
+      bar_dataset("Part 1 (silver)", stats.daily_silver_stars, silver_color)
+    },
+          ${bar_dataset("Part 2 (gold)", stats.daily_gold_stars, gold_color)},
           {type:'line',label:'   ${subtitle}',data:[],backgroundColor:'rgba(0,0,0,0)',borderColor:'rgba(0,0,0,0)',borderWidth:0,datalabels:{display:false}}
         ]
       },
